@@ -59,8 +59,6 @@ class NodeConnectPoint(Container):
         self.close_top = close_top
         self.close_left = close_left
 
-        self.animate_position = animation.Animation(200, AnimationCurve.FAST_OUT_SLOWIN)
-
         self.point: Container = self.create_point()
         self.content = self.create_content()
         
@@ -71,7 +69,6 @@ class NodeConnectPoint(Container):
         """
         return Container(
             on_long_press = (
-                # lambda e: self.node.clear_contact_point(self)
                 lambda e: self.remove_node_from_connects_to()
                 if self.connect_type == ParameterConnectType.IN else None
             ),

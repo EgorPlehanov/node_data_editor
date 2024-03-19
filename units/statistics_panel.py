@@ -65,10 +65,10 @@ class NodeStatisticsPanel(Row):
         return {
             param.key: param
             for param in [
-                NodeStatistParam("nodes", 0, "Количество\u00A0узлов", values_not_shown=[0]),
-                NodeStatistParam("edges", 0, "Количество\u00A0соединений", values_not_shown=[0]),
+                NodeStatistParam("nodes", 0, "Узлов", values_not_shown=[0]),
+                NodeStatistParam("edges", 0, "Соединений", values_not_shown=[0]),
                 NodeStatistParam("scale", 1, "Масштаб", values_not_shown=[1], prefix='x'),
-                NodeStatistParam("selected", 0, "Выбрано\u00A0узлов", values_not_shown=[0]),
+                NodeStatistParam("selected", 0, "Выбрано", values_not_shown=[0]),
             ]
         }
     

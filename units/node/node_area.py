@@ -73,8 +73,8 @@ class NodeArea(cv.Canvas):
                 page=self.page, node_area=self,
                 scale=self.current_scale, config=config
             ))
-        self.workplace.node_stats.update_text("nodes", len(self.nodes))
         self.update()
+        self.workplace.node_stats.update_text("nodes", len(self.nodes))
 
     
     def delete_node(self, node):
@@ -88,8 +88,9 @@ class NodeArea(cv.Canvas):
         if node in self.selected_nodes:
             self.selected_nodes.remove(node)
         
-        self.workplace.node_stats.update_text("nodes", len(self.nodes))
         self.paint_line()
+        self.workplace.result_area.update()
+        self.workplace.node_stats.update_text("nodes", len(self.nodes))
 
 
     def delete_node_connect(self, cur_node: Node):
@@ -122,7 +123,6 @@ class NodeArea(cv.Canvas):
         for view in cur_node.parameters_results_view_dict.values():
             if view is not None:
                 self.workplace.result_area.result_controls.remove(view)
-        self.workplace.update()
 
 
     def calculate_coord(self, point: NodeConnectPoint):
@@ -172,13 +172,13 @@ class NodeArea(cv.Canvas):
                             color = from_point.point_color
                         ),
                     ))
-        
-        self.workplace.node_stats.update_text("edges", len(shp))
-        
+        edges_count = len(shp)
         shp.extend(self.background_grid)
-        
         self.shapes = shp
+
         self.update()
+        self.workplace.node_stats.update_text("edges", edges_count)
+
 
 
     def add_selection_node(self, node):
@@ -205,8 +205,9 @@ class NodeArea(cv.Canvas):
         Очистить выделение со всех выбранных узлов
         """
         for node in reversed(self.selected_nodes):
-            node.toggle_selection()
+            node.toggle_selection(is_update=False)
         self.selected_nodes = []
+        self.update()
 
 
     def drag_selection(self, top_delta = 0, left_delta = 0):
@@ -232,7 +233,8 @@ class NodeArea(cv.Canvas):
         '''
         for node in self.nodes:
             if not node.is_selected:
-                node.toggle_selection()
+                node.toggle_selection(is_update=False)
+        self.update()
 
 
     def delete_selected_nodes(self):
@@ -248,7 +250,7 @@ class NodeArea(cv.Canvas):
         Инвертировать выделение
         '''
         for node in self.nodes:
-            node.toggle_selection()
+            node.toggle_selection(is_update = False)
         self.update()
 
 
@@ -276,8 +278,8 @@ class NodeArea(cv.Canvas):
         self.current_scale = new_scale
         self.set_scale(e.local_x, e.local_y, scale_delta)
 
+        self.paint_line()
         self.workplace.node_stats.update_text("scale", self.current_scale)
-        self.update()
 
 
     def set_scale(self, zoom_x, zoom_y, scale_delta):
@@ -294,7 +296,6 @@ class NodeArea(cv.Canvas):
                 l_x * scale_delta / self.current_scale,
                 l_y * scale_delta / self.current_scale
             )
-            self.paint_line()
 
 
     def get_node_parameter(self, node_id: int, param_id: int):
@@ -412,5 +413,5 @@ class NodeArea(cv.Canvas):
                 and node.top + node.height > y_start
             ):
                 if not node.is_selected:
-                    node.toggle_selection()
+                    node.toggle_selection(is_update=False)
     

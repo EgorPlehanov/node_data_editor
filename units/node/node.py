@@ -202,7 +202,6 @@ class Node(GestureDetector):
                     bgcolor = self.NODE_BGCOLOR,
                     border_radius = border_radius.all(self.BORDER_RADIUS),
                     border = border.all(self.BORDER_WIDTH, self.NODE_BORDER_COLOR),
-                    animate_size = animation.Animation(200, AnimationCurve.FAST_OUT_SLOWIN),
                     shadow = BoxShadow(
                         spread_radius = 0,
                         blur_radius = 5,
@@ -212,7 +211,7 @@ class Node(GestureDetector):
                     )
                 ),
                 *self.connect_points
-            ]
+            ], clip_behavior=ClipBehavior.NONE
         )
     
 
@@ -286,7 +285,6 @@ class Node(GestureDetector):
         self.height = self.get_height()
 
         self.node_area.paint_line()
-        self.update()
     
 
     def delete(self, e):
@@ -444,7 +442,6 @@ class Node(GestureDetector):
         if not keyboard.is_pressed('shift'):
             self.node_area.drag_selection(top_delta = e.delta_y, left_delta = e.delta_x)
             self.node_area.paint_line()
-            self.node_area.update()
 
 
     def drag_node(self, left_delta = 0, top_delta = 0):
@@ -478,13 +475,14 @@ class Node(GestureDetector):
         self.update()
 
 
-    def toggle_selection(self):
+    def toggle_selection(self, is_update = True):
         """
         Переключает выделение узла
         """
         self.is_selected = not self.is_selected
         self.set_selection_style()
-        self.update()
+        if is_update:
+            self.update()
 
 
     def set_selection_style(self):
