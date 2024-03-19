@@ -55,31 +55,31 @@ class MenubarTools:
                 Tool(
                     name = "Выбрать все",
                     icon = icons.SELECT_ALL,
-                    function = lambda self: self.workplace.node_area.select_all(None)
+                    function = lambda self: self.workplace.node_area.select_all()
                 ),
 
                 Tool(
                     name = "Снять выделение",
                     icon = icons.DESELECT,
-                    function = lambda self: self.workplace.node_area.clear_selection(None)
+                    function = lambda self: self.workplace.node_area.clear_selection()
                 ),
 
                 Tool(
                     name = "Инвертировать выделение",
                     icon = icons.SWAP_HORIZ,
-                    function = lambda self: self.workplace.node_area.invert_selection(None)
+                    function = lambda self: self.workplace.node_area.invert_selection()
                 ),
 
                 Tool(
                     name = "Переместить выделеные в начало",
                     icon = icons.CENTER_FOCUS_STRONG_SHARP,
-                    function = lambda self: self.workplace.node_area.move_selection_to_start(None)
+                    function = lambda self: self.workplace.node_area.move_selection_to_start()
                 ),
 
                 Tool(
                     name = "Удалить выделенные",
                     icon = icons.DELETE_SWEEP,
-                    function = lambda self: self.workplace.node_area.delete_selected_nodes(None)
+                    function = lambda self: self.workplace.node_area.delete_selected_nodes()
                 )
             ]
         )

@@ -12,3 +12,4 @@ def main(page: Page):
 app(target=main)#, view=AppView.WEB_BROWSER)
 
 # flet run app\node\main.py
+# flet run main.py

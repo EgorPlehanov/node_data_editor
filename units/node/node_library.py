@@ -522,6 +522,39 @@ class NodeLibrary:
 
                                 FilePickerParamConfig(key="image", name="Фото"),
                             ]
+                        ),
+
+                        NodeConfig(
+                            key = "compute_difference_image",
+                            name = "Вычислить разностное изображение",
+                            icon = icons.VIEW_TIMELINE_OUTLINED,
+                            color = colors.INDIGO,
+                            function = compute_difference_image,
+                            parameters = [
+                                OutParamConfig(
+                                    key="difference_image", name="Difference image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image1", name="Фото 1"),
+                                FilePickerParamConfig(key="image2", name="Фото 2"),
+                            ]
+                        ),
+
+                        NodeConfig(
+                            key = "apply_optimal_histogram_equalization",
+                            name = "Применить оптимальное градационное преобразование",
+                            icon = icons.AUTO_FIX_HIGH,
+                            color = colors.INDIGO,
+                            function = apply_optimal_histogram_equalization,
+                            parameters = [
+                                OutParamConfig(
+                                    key="optimal_image", name="Optimal image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                            ]
                         )
                     ]
                 ),

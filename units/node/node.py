@@ -8,6 +8,7 @@ from typing import Callable, List, Dict, get_type_hints
 from inspect import signature
 from dataclasses import dataclass, field
 import math
+import keyboard
 
 from .node_typing import Color
 from ..parameters.parameters_dict import *
@@ -23,14 +24,16 @@ class NodeConfig:
     
     key - ключ узла
     name - название узла
+    icon - иконка узла
     group - группа узла
     color - цвет узла
     left - позиция узла по оси x
-    enabled - активен ли узел
+    top - позиция узла по оси y
+    width - ширина узла
+    enabled - активен ли узел для выбора
     function - функция узла
     parameters - параметры узла
-    x - координата x узла
-    y - координата y узла
+    is_display_result - показывать ли результат узла (используется для узла отображения результата)
     """
     key: str                = "unknown"
     name: str               = "Untitled"
@@ -110,8 +113,9 @@ class Node(GestureDetector):
         self.id = next(Node.id_counter)
         self.mouse_cursor = MouseCursor.CLICK
         self.drag_interval = 20
+        self.on_pan_start = self.on_drag_start
         self.on_pan_update = self.on_drag
-        self.on_tap = self.toggle_selection
+        self.on_tap = self.on_tap_select
 
         self.is_open = True
         self.is_selected = False
@@ -422,18 +426,25 @@ class Node(GestureDetector):
         return points if point_idx is None else points[point_idx]
     
 
+    def on_drag_start(self, e: DragStartEvent):
+        """
+        Обработка начала перемещения узла
+        """
+        if keyboard.is_pressed('shift'):
+            self.toggle_selection()
+        elif not self.is_selected:
+            self.node_area.clear_selection()
+            self.set_selection_value(True)
+    
+
     def on_drag(self, e: DragUpdateEvent):
         """
         Обработка перемещения узла
         """
-        if not self.is_selected:
-            self.is_selected = True
-            self.node_area.clear_selection(None)
-            self.set_selection()
-
-        self.node_area.drag_selection(top_delta = e.delta_y, left_delta = e.delta_x)
-        self.node_area.paint_line()
-        self.node_area.update()
+        if not keyboard.is_pressed('shift'):
+            self.node_area.drag_selection(top_delta = e.delta_y, left_delta = e.delta_x)
+            self.node_area.paint_line()
+            self.node_area.update()
 
 
     def drag_node(self, left_delta = 0, top_delta = 0):
@@ -444,16 +455,39 @@ class Node(GestureDetector):
         self.left = max(0, self.left + left_delta * self.scale)
 
 
-    def toggle_selection(self, e):
+    def on_tap_select(self, e: TapEvent):
+        """
+        Обработка нажатия на узел
+        """
+        if keyboard.is_pressed('shift'):
+            self.toggle_selection()
+        else:
+            self.node_area.clear_selection()
+            self.set_selection_value(True)
+            
+
+
+    def set_selection_value(self, is_selected: bool):
+        """
+        Выделить узел
+        """
+        if self.is_selected == is_selected:
+            return
+        self.is_selected = is_selected
+        self.set_selection_style()
+        self.update()
+
+
+    def toggle_selection(self):
         """
         Переключает выделение узла
         """
         self.is_selected = not self.is_selected
-        self.set_selection()
+        self.set_selection_style()
         self.update()
 
 
-    def set_selection(self):
+    def set_selection_style(self):
         """
         Включает выделение узла
         """
@@ -582,6 +616,7 @@ class Node(GestureDetector):
         for param_key, result in self.result.items():
             if param_key not in self.parameters_results_view_dict:
                 continue
+
             result_control: NodeResultView = self.parameters_results_view_dict[param_key]
             if result["label"] == "" and self.connects_from[param_key] is not None:
                 result["label"] = self.connects_from[param_key].node.name
@@ -591,4 +626,5 @@ class Node(GestureDetector):
                 self.parameters_results_view_dict[param_key] = result_control
             else:
                 result_control.update_result(result)
+                
         result_area.update()

@@ -1,7 +1,6 @@
 from ....parameters.parameter_typing import File
 from ..calculate_function_typing import *
 
-from PIL import Image
 import cv2
 import numpy as np
 
@@ -68,7 +67,7 @@ def read_file(file: File | str = None):
     
 
 
-def open_image_file(image_file: File) -> Image.Image:
+def open_image_file(image_file: File):
     """
     Открывает изображение из файла
     """

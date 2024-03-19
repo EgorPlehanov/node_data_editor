@@ -25,15 +25,23 @@ class NodeArea(cv.Canvas):
         self.nodes: list[Node] = []
         self.selected_nodes: list[Node] = []
 
+        self.selection_box = self.create_selection_box()
+        self.selection_box_stroke = self.create_selection_box_stroke()
+
         self.content = GestureDetector(
-            content = Stack(
-                width = self.width,
-                height = self.height,
-                controls = self.nodes,                
-            ),
-            on_tap = self.clear_selection,
+            content = Stack([
+                Stack(self.nodes),
+                cv.Canvas([
+                    self.selection_box,
+                    self.selection_box_stroke
+                ]),
+            ]),
+            drag_interval = 50,
+            on_tap = lambda e: self.clear_selection(),
             on_scroll = self.scroll_scale_node_area,
-            # on_pan_update = self.drag_all
+            on_pan_start = self.start_selection_box,
+            on_pan_update = self.drag_selection_box,
+            on_pan_end = self.end_selection_box,
         )
 
     
@@ -168,6 +176,7 @@ class NodeArea(cv.Canvas):
         self.workplace.node_stats.update_text("edges", len(shp))
         
         shp.extend(self.background_grid)
+        
         self.shapes = shp
         self.update()
 
@@ -191,12 +200,12 @@ class NodeArea(cv.Canvas):
             self.workplace.node_stats.update_text("selected", len(self.selected_nodes))
 
 
-    def clear_selection(self, e):
+    def clear_selection(self):
         """
         Очистить выделение со всех выбранных узлов
         """
         for node in reversed(self.selected_nodes):
-            node.toggle_selection(None)
+            node.toggle_selection()
         self.selected_nodes = []
 
 
@@ -217,16 +226,16 @@ class NodeArea(cv.Canvas):
         self.paint_line()
     
 
-    def select_all(self, e):
+    def select_all(self):
         '''
         Выделить все узлы
         '''
         for node in self.nodes:
             if not node.is_selected:
-                node.toggle_selection(None)
+                node.toggle_selection()
 
 
-    def delete_selected_nodes(self, e):
+    def delete_selected_nodes(self):
         '''
         Удалить выделенные узлы
         '''
@@ -234,17 +243,16 @@ class NodeArea(cv.Canvas):
             self.delete_node(node)
         
 
-    def invert_selection(self, e):
+    def invert_selection(self):
         '''
         Инвертировать выделение
         '''
         for node in self.nodes:
-            node.is_selected = not node.is_selected
-            node.set_selection()
+            node.toggle_selection()
         self.update()
 
 
-    def move_selection_to_start(self, e):
+    def move_selection_to_start(self):
         '''
         Переместить выделенные узлы в начало
         '''
@@ -295,3 +303,114 @@ class NodeArea(cv.Canvas):
         """
         node = next(node for node in self.nodes if node.id == node_id)
         return next(param for param in node.parameters_dict.values() if param.id == param_id)
+    
+
+    def create_selection_box(self):
+        """
+        Создает объект области выделения
+        """
+        return cv.Rect(
+            paint = Paint(
+                color = colors.with_opacity(0.05, colors.WHITE)
+            )
+        )
+    
+
+    def create_selection_box_stroke(self):
+        '''
+        Обновить обводку прямоугольного выделения
+        '''
+        self.selection_box_stroke_corner_1 = cv.Path.MoveTo(0, 0)
+        self.selection_box_stroke_corner_2 = cv.Path.LineTo(0, 0)
+        self.selection_box_stroke_corner_3 = cv.Path.LineTo(0, 0)
+        self.selection_box_stroke_corner_4 = cv.Path.LineTo(0, 0)
+        return cv.Path(
+            [
+                self.selection_box_stroke_corner_1,
+                self.selection_box_stroke_corner_2,
+                self.selection_box_stroke_corner_3,
+                self.selection_box_stroke_corner_4,
+                cv.Path.Close(),
+            ],
+            paint = Paint(
+                stroke_width = 1,
+                color = colors.WHITE,
+                style = PaintingStyle.STROKE,
+                stroke_dash_pattern = [10, 5],
+            ),
+        )
+        
+
+    def start_selection_box(self, e):
+        '''
+        Начать выделение
+        '''
+        self.selection_box.x = e.local_x
+        self.selection_box.y = e.local_y
+        self.selection_box.width = 0
+        self.selection_box.height = 0
+
+        self.selection_box_stroke_corner_1.x = e.local_x
+        self.selection_box_stroke_corner_1.y = e.local_y
+        self.selection_box_stroke_corner_2.x = e.local_x
+        self.selection_box_stroke_corner_2.y = e.local_y
+        self.selection_box_stroke_corner_3.x = e.local_x
+        self.selection_box_stroke_corner_3.y = e.local_y
+        self.selection_box_stroke_corner_4.x = e.local_x
+        self.selection_box_stroke_corner_4.y = e.local_y
+
+        self.selection_box.visible = True
+        self.selection_box_stroke.visible = True
+        self.clear_selection()
+
+    
+    def drag_selection_box(self, e):
+        '''
+        Переместить выделение
+        '''
+        self.selection_box.width = e.local_x - self.selection_box.x
+        self.selection_box.height = e.local_y - self.selection_box.y
+
+        end_x = self.selection_box.x + self.selection_box.width
+        end_y = self.selection_box.y + self.selection_box.height
+
+        self.selection_box_stroke_corner_1.x = end_x
+        self.selection_box_stroke_corner_2.x = end_x
+        self.selection_box_stroke_corner_2.y = end_y
+        self.selection_box_stroke_corner_3.y = end_y
+
+        self.update()
+
+
+    def end_selection_box(self, e):
+        '''
+        Завершить выделение
+        '''
+        self.selection_box.visible = False
+        self.selection_box_stroke.visible = False
+        self.select_all_in_selection_box()
+        self.update()
+
+
+    def select_all_in_selection_box(self):
+        '''
+        Выделить все узлы в выделенном прямоугольнике
+        '''
+        x_start = self.selection_box.x
+        y_start = self.selection_box.y
+        x_end = x_start + self.selection_box.width
+        y_end = y_start + self.selection_box.height
+
+        x_start, x_end = min(x_start, x_end), max(x_start, x_end)
+        y_start, y_end = min(y_start, y_end), max(y_start, y_end)
+
+        for node in self.nodes:
+            if (
+                node.left < x_end
+                and node.top < y_end
+                and node.left + node.width > x_start
+                and node.top + node.height > y_start
+            ):
+                if not node.is_selected:
+                    node.toggle_selection()
+    

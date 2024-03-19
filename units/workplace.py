@@ -48,7 +48,6 @@ class Workplace(Column):
                                     Container(
                                         self.node_stats,
                                         bgcolor = "#111111",
-                                        # colors.GREY_900,
                                         padding = 5,
                                     ),
                                 ],
@@ -59,10 +58,9 @@ class Workplace(Column):
                         ),
                         GestureDetector(
                             content = VerticalDivider(
-                                opacity = 0.8,
                                 thickness = 5,
                                 width = 5,
-                                color = colors.BLACK26,
+                                color = colors.GREY_900,
                             ),
                             mouse_cursor = MouseCursor.RESIZE_COLUMN,
                             drag_interval = 10,
@@ -111,7 +109,7 @@ class Workplace(Column):
         '''Изменяет цвет вертикального разделителя, когда курсор убирается с вертикального разделителя'''
         if self.is_divider_dragging:
             return
-        e.control.content.color = colors.BLACK26
+        e.control.content.color = colors.GREY_900
         self.update()
 
     
