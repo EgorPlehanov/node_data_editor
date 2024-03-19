@@ -4,10 +4,11 @@ if TYPE_CHECKING:
 
 from flet import *
 import flet.canvas as cv
-from typing import Dict
+from typing import Dict, List, Set
 
 from .node import Node, NodeConfig
 from .node_connect_point import NodeConnectPoint
+from .node_typing import NodeConnection
 
 
 
@@ -43,6 +44,8 @@ class NodeArea(cv.Canvas):
             on_pan_update = self.drag_selection_box,
             on_pan_end = self.end_selection_box,
         )
+
+        self.nodes_connects = self.get_nodes_connects()
 
     
     def create_background_grid(self):
@@ -123,62 +126,6 @@ class NodeArea(cv.Canvas):
         for view in cur_node.parameters_results_view_dict.values():
             if view is not None:
                 self.workplace.result_area.result_controls.remove(view)
-
-
-    def calculate_coord(self, point: NodeConnectPoint):
-        node = point.node
-
-        left_center = node.width // 2
-        top_center = node.height // 2
-
-        point_left = point.left + node.POINT_SIZE // 2 - left_center
-        point_top = point.top + node.POINT_SIZE // 2 - top_center
-
-        point_left_scl = point_left * self.current_scale + left_center
-        point_top_scl = point_top * self.current_scale + top_center
-
-        return node.left + point_left_scl, node.top + point_top_scl
-    
-
-    def paint_line(self, line_len = 10, steepness = 70):
-        '''
-        Рисует линию соединения
-        '''
-        line_len *= self.current_scale
-        steepness *= self.current_scale
-        shp = []
-        for node in self.nodes:
-            for from_param_key, connects_to_params in node.connects_to.items():
-                for param in connects_to_params:
-                    from_point: NodeConnectPoint = node.parameters_dict[from_param_key].connect_point
-                    to_point: NodeConnectPoint = param.connect_point
-                    from_left, from_top = self.calculate_coord(from_point)
-                    to_left, to_top = self.calculate_coord(to_point)
-
-                    shp.append(cv.Path(
-                        elements = [
-                            cv.Path.MoveTo(from_left, from_top),
-                            cv.Path.LineTo(from_left + line_len, from_top),
-                            cv.Path.CubicTo(
-                                from_left + steepness, from_top,
-                                to_left - steepness, to_top,
-                                to_left - line_len, to_top,
-                            ),
-                            cv.Path.LineTo(to_left, to_top),
-                        ],
-                        paint = Paint(
-                            stroke_width = 2,
-                            style = PaintingStyle.STROKE,
-                            color = from_point.point_color
-                        ),
-                    ))
-        edges_count = len(shp)
-        shp.extend(self.background_grid)
-        self.shapes = shp
-
-        self.update()
-        self.workplace.node_stats.update_text("edges", edges_count)
-
 
 
     def add_selection_node(self, node):
@@ -414,4 +361,133 @@ class NodeArea(cv.Canvas):
             ):
                 if not node.is_selected:
                     node.toggle_selection(is_update=False)
+
+
+    def calculate_coord(self, point: NodeConnectPoint):
+        node = point.node
+
+        left_center = node.width // 2
+        top_center = node.height // 2
+
+        point_left = point.left + node.POINT_SIZE // 2 - left_center
+        point_top = point.top + node.POINT_SIZE // 2 - top_center
+
+        point_left_scl = point_left * self.current_scale + left_center
+        point_top_scl = point_top * self.current_scale + top_center
+
+        return node.left + point_left_scl, node.top + point_top_scl
+    
+
+    def __paint_line(self, line_len = 10, steepness = 70):
+        '''
+        Рисует линию соединения
+        '''
+        line_len *= self.current_scale
+        steepness *= self.current_scale
+        shp = []
+        for node in self.nodes:
+            for from_param_key, connects_to_params in node.connects_to.items():
+                for param in connects_to_params:
+                    from_point: NodeConnectPoint = node.parameters_dict[from_param_key].connect_point
+                    to_point: NodeConnectPoint = param.connect_point
+                    from_left, from_top = self.calculate_coord(from_point)
+                    to_left, to_top = self.calculate_coord(to_point)
+
+                    shp.append(cv.Path(
+                        elements = [
+                            cv.Path.MoveTo(from_left, from_top),
+                            cv.Path.LineTo(from_left + line_len, from_top),
+                            cv.Path.CubicTo(
+                                from_left + steepness, from_top,
+                                to_left - steepness, to_top,
+                                to_left - line_len, to_top,
+                            ),
+                            cv.Path.LineTo(to_left, to_top),
+                        ],
+                        paint = Paint(
+                            stroke_width = 2,
+                            style = PaintingStyle.STROKE,
+                            color = from_point.point_color
+                        ),
+                    ))
+        edges_count = len(shp)
+        shp.extend(self.background_grid)
+        self.shapes = shp
+
+        self.update()
+        self.workplace.node_stats.update_text("edges", edges_count)
+
+
+    def paint_line(self, selected_only = False, line_len = 10, steepness = 70):
+        '''
+        Рисует линию соединения
+        '''
+        line_len *= self.current_scale
+        steepness *= self.current_scale
+        shp = []
+
+        for connect in self.get_nodes_connects(selected_only):
+            from_left, from_top = self.calculate_coord(connect.from_point)
+            to_left, to_top = self.calculate_coord(connect.to_point)
+
+            shp.append(cv.Path(
+                elements = [
+                    cv.Path.MoveTo(from_left, from_top),
+                    cv.Path.LineTo(from_left + line_len, from_top),
+                    cv.Path.CubicTo(
+                        from_left + steepness, from_top,
+                        to_left - steepness, to_top,
+                        to_left - line_len, to_top,
+                    ),
+                    cv.Path.LineTo(to_left, to_top),
+                ],
+                paint = Paint(
+                    stroke_width = 2,
+                    style = PaintingStyle.STROKE,
+                    color = connect.from_point.point_color
+                ),
+            ))
+
+        edges_count = len(shp)
+        shp.extend(self.background_grid)
+        self.shapes = shp
+
+        self.update()
+        self.workplace.node_stats.update_text("edges", edges_count)
+    
+
+    def get_nodes_connects(self, selected_only: bool = False) -> List[NodeConnection]:
+        '''
+        Возвращает список соединений
+        '''
+        unique_connects: Set[NodeConnection] = set()
+        for node in self.nodes:
+            if selected_only and not node.is_selected:
+                continue
+            unique_connects.update(self._get_node_connects_to(node))
+            if selected_only:
+                unique_connects.update(self._get_node_connects_from(node))
+        return list(unique_connects)
+    
+
+    def _get_node_connects_to(self, node: Node) -> Set[NodeConnection]:
+        """
+        Возвращает список соединений исходящих из узла
+        """
+        return {
+            NodeConnection(node.parameters_dict[from_param_key], to_param)
+            for from_param_key, connects_to_params in node.connects_to.items()
+            for to_param in connects_to_params
+        }
+
+
+    def _get_node_connects_from(self, node: Node) -> Set[NodeConnection]:
+        """
+        Возвращает список соединений входящих в узел
+        """
+        return {
+            NodeConnection(from_param, node.parameters_dict[to_param_key])
+            for to_param_key, from_param in node.connects_from.items()
+            if from_param is not None
+        }
     

@@ -133,11 +133,11 @@ class Node(GestureDetector):
         self.function = self.config.function
         self.function_signature = self.get_signature_type_hints()
 
-        self.connects_from: Dict = {
+        self.connects_from: Dict[str, Any] = {
             param.key: None
             for param in self.config.parameters
         }
-        self.connects_to: Dict = {
+        self.connects_to: Dict[str, List] = {
             param.key: []
             for param in self.config.parameters
         }

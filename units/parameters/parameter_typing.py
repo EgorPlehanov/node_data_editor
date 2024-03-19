@@ -78,7 +78,7 @@ class ParamInterface(ABC):
     has_connect_point: bool = False
     connect_point_color: str = None
     
-    connect_point = None
+    connect_point: NodeConnectPoint = None
 
     def __init__(self):
         self.id = next(self.id_counter)
