@@ -36,7 +36,7 @@ class NodeArea(cv.Canvas):
                     self.selection_box_stroke
                 ]),
             ]),
-            drag_interval = 50,
+            drag_interval = 20,
             on_tap = lambda e: self.clear_selection(),
             on_scroll = self.scroll_scale_node_area,
             on_pan_start = self.start_selection_box,

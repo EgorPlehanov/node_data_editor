@@ -63,7 +63,7 @@ class Workplace(Column):
                                 color = colors.GREY_900,
                             ),
                             mouse_cursor = MouseCursor.RESIZE_COLUMN,
-                            drag_interval = 10,
+                            drag_interval = 20,
                             on_enter = self.hover_divider,
                             on_exit = self.hover_exit_divider,
                             on_horizontal_drag_start = self.drag_start_divider,
