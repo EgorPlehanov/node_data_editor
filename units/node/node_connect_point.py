@@ -102,9 +102,6 @@ class NodeConnectPoint(Container):
                 color = colors.BLACK38,
                 offset = Offset(0, 5),
                 blur_style = ShadowBlurStyle.NORMAL,
-            ),
-            content = GestureDetector(
-                on_pan_update = self.on_point_drag,
             )
         )
 
@@ -204,7 +201,7 @@ class NodeConnectPoint(Container):
         """
         Обрабатывает данные от подключения к другому параметру (NodeConnection)
         """
-        if src_data.from_node == self.node or src_data == self:
+        if src_data.from_node == self.node or src_data == self.current_connect:
             self.drag_leave(e)
 
         else:
@@ -257,7 +254,7 @@ class NodeConnectPoint(Container):
         """
         self.content.content = Draggable(
             content = self.point,
-            data = connect
+            data = connect,
         )
         self.current_point_color = connect.path_color
         self.set_point_color(is_update=True)
@@ -298,5 +295,6 @@ class NodeConnectPoint(Container):
         """
         Обработка перемещения контакта
         """
+        # TODO: Придумать как сделать перемещение линии при подключении 
         print(type(e))
         print("global", e.global_x, e.global_y)
