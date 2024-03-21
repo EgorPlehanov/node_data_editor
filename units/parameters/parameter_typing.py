@@ -95,6 +95,12 @@ class ParamInterface(ABC):
         self.control_height = self.height - self.PADDING_VERTICAL_SIZE * 2
         self.tooltip = self._config.tooltip
 
+    def __eq__(self, other):
+        return (isinstance(other, ParamInterface) and self.id == other.id)
+    
+    def __hash__(self):
+        return hash(self.id)
+
     @property
     def type(self) -> str:
         return self._type
@@ -103,9 +109,9 @@ class ParamInterface(ABC):
     def _create_content(self) -> Any:
         pass
 
-    def set_connect_state(self, is_connected: bool, recalculate: bool = True) -> None:
+    def set_connect_state(self, is_connected: bool, is_recalculate: bool = True) -> None:
         self.is_connected = is_connected
-        if recalculate:
+        if is_recalculate:
             self._on_change()
     
     def _on_change(self) -> None:

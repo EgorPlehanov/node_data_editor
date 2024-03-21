@@ -216,7 +216,7 @@ class SingleValueParam(Container, ParamInterface):
         pass
 
     
-    def set_connect_state(self, is_connected: bool, recalculate: bool = True) -> None:
+    def set_connect_state(self, is_connected: bool, is_recalculate: bool = True) -> None:
         """
         Переключает состояние подключения
         """
@@ -225,7 +225,7 @@ class SingleValueParam(Container, ParamInterface):
         self.enter_control.visible = not self.is_connected
         self.connected_control.visible = self.is_connected
         self.update()
-        if recalculate:
+        if is_recalculate:
             self._on_change()
 
 

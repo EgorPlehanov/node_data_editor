@@ -15,6 +15,23 @@ class NodeLibrary:
             name = "Test",
             icon = icons.QUESTION_MARK,
             obj_list = [
+                NodeConfig(
+                    key = "test",
+                    name = "Тестовая",
+                    icon = icons.QUESTION_MARK,
+                    function = lambda: {},
+                    parameters = [
+                        OutParamConfig(name = "Param 1", connect_point_color = "red"),
+                        OutParamConfig(name = "Param 2", connect_point_color = "yellow"),
+                        OutParamConfig(name = "Param 3", connect_point_color = "green"),
+                        OutParamConfig(name = "Param 4", connect_point_color = "blue"),
+
+                        SingleValueParamConfig(name = "Param 5"),
+                        SingleValueParamConfig(name = "Param 6"),
+                        SingleValueParamConfig(name = "Param 7"),
+                        SingleValueParamConfig(name = "Param 8"),
+                    ]
+                ),
 
                 NodeConfig(
                     key = "test3",

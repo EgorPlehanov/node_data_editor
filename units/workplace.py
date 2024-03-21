@@ -85,8 +85,11 @@ class Workplace(Column):
             )
         ]
     
+    
     def resize_columns(self, e: DragUpdateEvent) -> None:
-        '''Изменяет ширину колонок'''
+        '''
+        Изменяет ширину колонок
+        '''
         node_area_width = int(e.global_x)
         node_area_width = max(node_area_width, 1)
 
@@ -100,13 +103,17 @@ class Workplace(Column):
 
 
     def hover_divider(self, e: HoverEvent) -> None:
-        '''Изменяет цвет вертикального разделителя, когда курсор наводится на вертикальный разделитель'''
+        '''
+        Изменяет цвет вертикального разделителя, когда курсор наводится на вертикальный разделитель
+        '''
         e.control.content.color = colors.DEEP_ORANGE_ACCENT_400
         self.update()
     
 
     def hover_exit_divider(self, e: HoverEvent) -> None:
-        '''Изменяет цвет вертикального разделителя, когда курсор убирается с вертикального разделителя'''
+        '''
+        Изменяет цвет вертикального разделителя, когда курсор убирается с вертикального разделителя
+        '''
         if self.is_divider_dragging:
             return
         e.control.content.color = colors.GREY_900
@@ -114,10 +121,15 @@ class Workplace(Column):
 
     
     def drag_start_divider(self, e: DragStartEvent) -> None:
-        """Включает режим перетаскивания вертикального разделителя"""
+        """
+        Включает режим перетаскивания вертикального разделителя
+        """
         self.is_divider_dragging = True
 
+
     def drag_end_divider(self, e: DragEndEvent) -> None:
-        """Отключает режим перетаскивания вертикального разделителя"""
+        """
+        Отключает режим перетаскивания вертикального разделителя
+        """
         self.is_divider_dragging = False
         self.hover_exit_divider(e)

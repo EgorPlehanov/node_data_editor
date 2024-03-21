@@ -8,44 +8,35 @@ from typing import Dict, List, Set
 
 from .node import Node, NodeConfig
 from .node_connect_point import NodeConnectPoint
-from .node_typing import NodeConnection
+from .node_connection import NodeConnection
 
 
 
-class NodeArea(cv.Canvas):
+class NodeArea(GestureDetector):
     def __init__(self, page: Page, workplace: "Workplace"):
         super().__init__()
         self.page = page
         self.workplace = workplace
 
-        self.current_scale = 1
+        self.setup_values()
+
+        self.content = self.create_content()
         
-        self.background_grid = self.create_background_grid()
-        self.shapes = self.background_grid
 
-        self.nodes: list[Node] = []
-        self.selected_nodes: list[Node] = []
-
-        self.selection_box = self.create_selection_box()
-        self.selection_box_stroke = self.create_selection_box_stroke()
-
-        self.content = GestureDetector(
-            content = Stack([
-                Stack(self.nodes),
-                cv.Canvas([
-                    self.selection_box,
-                    self.selection_box_stroke
-                ]),
-            ]),
-            drag_interval = 20,
-            on_tap = lambda e: self.clear_selection(),
-            on_scroll = self.scroll_scale_node_area,
-            on_pan_start = self.start_selection_box,
-            on_pan_update = self.drag_selection_box,
-            on_pan_end = self.end_selection_box,
-        )
-
-        self.nodes_connects = self.get_nodes_connects()
+    def create_content(self):
+        """
+        Создает содержимое
+        """
+        self.canvas_background_grid = cv.Canvas(shapes = self.background_grid)
+        self.canvas_connections = cv.Canvas(self.canvas_connections_shapes)
+        self.stack_nodes = Stack(self.nodes)
+        self.canvas_selection_box = cv.Canvas([self.selection_box, self.selection_box_stroke])
+        return Stack([
+            self.canvas_background_grid,
+            self.canvas_connections,
+            self.stack_nodes,
+            self.canvas_selection_box,
+        ])
 
     
     def create_background_grid(self):
@@ -64,6 +55,96 @@ class NodeArea(cv.Canvas):
             )
             for i in range(0, 20)
         ]
+    
+
+    def setup_values(self):
+        """
+        Устанавливает значения по умолчанию
+        """
+        self.current_scale = 1
+
+        self.nodes: list[Node] = []
+        self.selected_nodes: list[Node] = []
+        self.nodes_connects: List[NodeConnection] = []
+        self.canvas_connections_shapes: List[cv.Path] = []
+        
+        self.background_grid = self.create_background_grid()
+
+        self.selection_box = self.create_selection_box()
+        self.selection_box_stroke = self.create_selection_box_stroke()
+
+        self.drag_interval = 20
+        self.on_tap = lambda e: self.clear_selection()
+        self.on_scroll = self.scroll_scale_node_area
+        self.on_pan_start = self.start_selection_box
+        self.on_pan_update = self.drag_selection_box
+        self.on_pan_end = self.end_selection_box
+
+
+    def add_node_connect(self, node_connection: NodeConnection):
+        """
+        Добавить соединение
+        """
+        self.add_node_from_to_connect(node_connection)
+
+        self.canvas_connections_shapes.append(node_connection.connect_path)
+        self.nodes_connects.append(node_connection)
+
+        self.canvas_connections.update()
+        self.update_stats(update_edges = True)
+
+
+    def add_node_from_to_connect(self, node_connection: NodeConnection):
+        """
+        Добавить соединение в словари ноды
+        """
+        from_node = node_connection.from_node
+        to_node = node_connection.to_node
+        from_node.add_connect_to(node_connection.from_param, node_connection.to_param)
+        to_node.add_connect_from(node_connection.from_param,  node_connection.to_param)
+
+    
+    def remove_node_connect(self, node_connection: NodeConnection):
+        """
+        Удалить соединение
+        """
+        self.remove_node_from_to_connect(node_connection)
+
+        self.canvas_connections_shapes.remove(node_connection.connect_path)
+        self.nodes_connects.remove(node_connection)
+
+        self.canvas_connections.update()
+        self.update_stats(update_edges = True)
+
+
+    def remove_node_from_to_connect(self, node_connection: NodeConnection):
+        """
+        Удалить соединение из словарей ноды
+        """
+        from_node = node_connection.from_node
+        to_node = node_connection.to_node
+        from_node.remove_connect_to(node_connection.from_param, node_connection.to_param)
+        to_node.remove_connect_from(node_connection.to_param)
+
+
+    def update_stats(self,
+        update_all = False,
+        update_nodes = False,
+        update_selected = False,
+        update_scale = False,
+        update_edges = False
+    ):
+        """
+        Обновить статистику
+        """
+        if update_nodes or update_all:
+            self.workplace.node_stats.update_text("nodes", len(self.nodes))
+        if update_selected or update_all:
+            self.workplace.node_stats.update_text("selected", len(self.selected_nodes))
+        if update_scale or update_all:
+            self.workplace.node_stats.update_text("scale", self.current_scale)
+        if update_edges or update_all:
+            self.workplace.node_stats.update_text("edges", len(self.nodes_connects))
 
 
     def add_node(self, config: NodeConfig, ref_text_counter: Ref[Text] = None):
@@ -77,7 +158,7 @@ class NodeArea(cv.Canvas):
                 scale=self.current_scale, config=config
             ))
         self.update()
-        self.workplace.node_stats.update_text("nodes", len(self.nodes))
+        self.update_stats(update_nodes = True)
 
     
     def delete_node(self, node):
@@ -85,7 +166,7 @@ class NodeArea(cv.Canvas):
         Удалить узел
         """
         self.delete_node_results(node)
-        self.delete_node_connect(node)
+        # self.delete_node_connect(node) # TODO: ИСПРАВИТЬ 
         self.nodes.remove(node)
         
         if node in self.selected_nodes:
@@ -94,6 +175,7 @@ class NodeArea(cv.Canvas):
         self.paint_line()
         self.workplace.result_area.update()
         self.workplace.node_stats.update_text("nodes", len(self.nodes))
+        self.update_stats(update_all = True)
 
 
     def delete_node_connect(self, cur_node: Node):
@@ -134,8 +216,7 @@ class NodeArea(cv.Canvas):
         """
         if node not in self.selected_nodes:
             self.selected_nodes.append(node)
-            self.workplace.node_stats.update_text("selected", len(self.selected_nodes))
-
+            self.update_stats(update_selected = True)
 
 
     def remove_selection_node(self, node):
@@ -144,7 +225,7 @@ class NodeArea(cv.Canvas):
         """
         if node in self.selected_nodes:
             self.selected_nodes.remove(node)
-            self.workplace.node_stats.update_text("selected", len(self.selected_nodes))
+            self.update_stats(update_selected = True)
 
 
     def clear_selection(self):
@@ -163,6 +244,7 @@ class NodeArea(cv.Canvas):
         """
         for node in self.selected_nodes:
             node.drag_node(left_delta, top_delta)
+        self.paint_line()
 
 
     def drag_all(self, e):
@@ -226,7 +308,7 @@ class NodeArea(cv.Canvas):
         self.set_scale(e.local_x, e.local_y, scale_delta)
 
         self.paint_line()
-        self.workplace.node_stats.update_text("scale", self.current_scale)
+        self.update_stats(update_scale = True)
 
 
     def set_scale(self, zoom_x, zoom_y, scale_delta):
@@ -327,7 +409,7 @@ class NodeArea(cv.Canvas):
         self.selection_box_stroke_corner_2.y = end_y
         self.selection_box_stroke_corner_3.y = end_y
 
-        self.update()
+        self.canvas_selection_box.update()
 
 
     def end_selection_box(self, e):
@@ -337,7 +419,8 @@ class NodeArea(cv.Canvas):
         self.selection_box.visible = False
         self.selection_box_stroke.visible = False
         self.select_all_in_selection_box()
-        self.update()
+        self.canvas_selection_box.update()
+        self.stack_nodes.update()
 
 
     def select_all_in_selection_box(self):
@@ -363,100 +446,20 @@ class NodeArea(cv.Canvas):
                     node.toggle_selection(is_update=False)
 
 
-    def calculate_coord(self, point: NodeConnectPoint):
-        node = point.node
-
-        left_center = node.width // 2
-        top_center = node.height // 2
-
-        point_left = point.left + node.POINT_SIZE // 2 - left_center
-        point_top = point.top + node.POINT_SIZE // 2 - top_center
-
-        point_left_scl = point_left * self.current_scale + left_center
-        point_top_scl = point_top * self.current_scale + top_center
-
-        return node.left + point_left_scl, node.top + point_top_scl
-    
-
-    def __paint_line(self, line_len = 10, steepness = 70):
+    def paint_line(self, selected_only = False):
         '''
         Рисует линию соединения
         '''
-        line_len *= self.current_scale
-        steepness *= self.current_scale
-        shp = []
-        for node in self.nodes:
-            for from_param_key, connects_to_params in node.connects_to.items():
-                for param in connects_to_params:
-                    from_point: NodeConnectPoint = node.parameters_dict[from_param_key].connect_point
-                    to_point: NodeConnectPoint = param.connect_point
-                    from_left, from_top = self.calculate_coord(from_point)
-                    to_left, to_top = self.calculate_coord(to_point)
+        print(len(self.nodes_connects))
+        print(*self.nodes_connects)
+        for connect in self.nodes_connects:
+            connect.update_connect_path()
 
-                    shp.append(cv.Path(
-                        elements = [
-                            cv.Path.MoveTo(from_left, from_top),
-                            cv.Path.LineTo(from_left + line_len, from_top),
-                            cv.Path.CubicTo(
-                                from_left + steepness, from_top,
-                                to_left - steepness, to_top,
-                                to_left - line_len, to_top,
-                            ),
-                            cv.Path.LineTo(to_left, to_top),
-                        ],
-                        paint = Paint(
-                            stroke_width = 2,
-                            style = PaintingStyle.STROKE,
-                            color = from_point.point_color
-                        ),
-                    ))
-        edges_count = len(shp)
-        shp.extend(self.background_grid)
-        self.shapes = shp
-
-        self.update()
-        self.workplace.node_stats.update_text("edges", edges_count)
-
-
-    def paint_line(self, selected_only = False, line_len = 10, steepness = 70):
-        '''
-        Рисует линию соединения
-        '''
-        line_len *= self.current_scale
-        steepness *= self.current_scale
-        shp = []
-
-        for connect in self.get_nodes_connects(selected_only):
-            from_left, from_top = self.calculate_coord(connect.from_point)
-            to_left, to_top = self.calculate_coord(connect.to_point)
-
-            shp.append(cv.Path(
-                elements = [
-                    cv.Path.MoveTo(from_left, from_top),
-                    cv.Path.LineTo(from_left + line_len, from_top),
-                    cv.Path.CubicTo(
-                        from_left + steepness, from_top,
-                        to_left - steepness, to_top,
-                        to_left - line_len, to_top,
-                    ),
-                    cv.Path.LineTo(to_left, to_top),
-                ],
-                paint = Paint(
-                    stroke_width = 2,
-                    style = PaintingStyle.STROKE,
-                    color = connect.from_point.point_color
-                ),
-            ))
-
-        edges_count = len(shp)
-        shp.extend(self.background_grid)
-        self.shapes = shp
-
-        self.update()
-        self.workplace.node_stats.update_text("edges", edges_count)
+        self.canvas_connections.update()
+        self.stack_nodes.update()
     
 
-    def get_nodes_connects(self, selected_only: bool = False) -> List[NodeConnection]:
+    def create_nodes_connects(self, selected_only: bool = False) -> List[NodeConnection]:
         '''
         Возвращает список соединений
         '''
@@ -475,7 +478,7 @@ class NodeArea(cv.Canvas):
         Возвращает список соединений исходящих из узла
         """
         return {
-            NodeConnection(node.parameters_dict[from_param_key], to_param)
+            NodeConnection(self, node.parameters_dict[from_param_key], to_param)
             for from_param_key, connects_to_params in node.connects_to.items()
             for to_param in connects_to_params
         }
@@ -486,8 +489,25 @@ class NodeArea(cv.Canvas):
         Возвращает список соединений входящих в узел
         """
         return {
-            NodeConnection(from_param, node.parameters_dict[to_param_key])
+            NodeConnection(self, from_param, node.parameters_dict[to_param_key])
             for to_param_key, from_param in node.connects_from.items()
             if from_param is not None
         }
+    
+
+    def update_connects_lines(self, nodes_to_update: List[Node]):
+        '''
+        Обновляет линии соединений
+        '''
+        pass
+
+
+    def drag_connects_lines(self, delta_x: int, delta_y: int, nodes_to_update: List[NodeConnection] = None):
+        '''
+        Перетаскивает линии соединений
+        '''
+        if nodes_to_update is None:
+            nodes_to_update = self.nodes_connects
+        for node in nodes_to_update:
+            node.drag_connect_path(delta_x, delta_y)
     

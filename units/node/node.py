@@ -91,9 +91,9 @@ class Node(GestureDetector):
         self.node_area = node_area
         self.config = config
 
-        self.setup_values()
-
         self.scale = scale
+
+        self.setup_values()
         
         self.header = self.create_header()
         self.parameters = self.create_parameters()
@@ -146,6 +146,34 @@ class Node(GestureDetector):
             param.key: None
             for param in self.config.parameters
         }
+
+
+    def add_connect_to(self, param_from: ParamInterface, param_to: ParamInterface):
+        """
+        Добавляет связь из текущего параметра в зависимый параметр
+        """
+        self.connects_to[param_from._key].append(param_to)
+
+
+    def add_connect_from(self, param_from: ParamInterface, param_to: ParamInterface):
+        """
+        Добавляет связь из параметра источника в параметр текущего узла
+        """
+        self.connects_from[param_to._key] = param_from
+
+
+    def remove_connect_to(self, param_from: ParamInterface, param_to: ParamInterface):
+        """
+        Удаляет связь из текущего параметра в зависимый параметр
+        """
+        self.connects_to[param_from._key].remove(param_to)
+
+
+    def remove_connect_from(self, param_to: ParamInterface):
+        """
+        Удаляет связь из параметра источника в параметр текущего узла
+        """
+        self.connects_from[param_to._key] = None
 
 
     def get_height(self):
@@ -441,7 +469,6 @@ class Node(GestureDetector):
         """
         if not keyboard.is_pressed('shift'):
             self.node_area.drag_selection(top_delta = e.delta_y, left_delta = e.delta_x)
-            self.node_area.paint_line()
 
 
     def drag_node(self, left_delta = 0, top_delta = 0):

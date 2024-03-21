@@ -1,11 +1,13 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .node import Node
+    from ..parameters.parameter_typing import ParamInterface
 
 from flet import *
 from enum import Enum
-from typing import Any
+from typing import Any, Union
 
+from .node_connection import NodeConnection
     
 
 class ParameterConnectType(Enum):
@@ -20,6 +22,13 @@ class ParameterConnectType(Enum):
 
     def __str__(self):
         return self.value
+    
+
+
+# @dataclass
+# class ConnectionConfig:
+#     from_parameter: Any = None
+#     to_parameter: Any = None
 
 
 
@@ -41,15 +50,17 @@ class NodeConnectPoint(Container):
     ):
         super().__init__()
         self.node = node
-        self.parameter = parameter
+        self.parameter: "ParamInterface" = parameter
 
         self.node_id = self.node.id
         self.id = id
         
         self.connect_type = connect_type
         self.point_color = color
-        self.point_current_color = color
         self.point_size = size
+        
+        self.current_point_color = color
+        self.current_connect = None
 
         self.top = top
         self.left = left
@@ -60,7 +71,18 @@ class NodeConnectPoint(Container):
         self.close_left = close_left
 
         self.point: Container = self.create_point()
-        self.content = self.create_content()
+        self.content: Union[DragTarget, Draggable] = self.create_content()
+
+    
+    def __eq__(self, other):
+        return (
+            isinstance(other, NodeConnectPoint)
+            and self.id == other.id
+        )
+    
+
+    def __hash__(self):
+        return hash((self.id, self.node_id))
         
         
     def create_point(self) -> Container:
@@ -68,11 +90,8 @@ class NodeConnectPoint(Container):
         Создает контакт
         """
         return Container(
-            on_long_press = (
-                lambda e: self.remove_node_from_connects_to()
-                if self.connect_type == ParameterConnectType.IN else None
-            ),
-            bgcolor = self.point_current_color,
+            on_long_press = lambda e: self.clear_connect(),
+            bgcolor = self.current_point_color,
             width = self.point_size,
             height = self.point_size,
             shape = BoxShape.CIRCLE,
@@ -84,6 +103,9 @@ class NodeConnectPoint(Container):
                 offset = Offset(0, 5),
                 blur_style = ShadowBlurStyle.NORMAL,
             ),
+            content = GestureDetector(
+                on_pan_update = self.on_point_drag,
+            )
         )
 
 
@@ -100,12 +122,7 @@ class NodeConnectPoint(Container):
             )
         else:
             return Draggable(
-                data = {
-                    'node_id': self.node_id,
-                    'value_idx': self.id,
-                    'color': self.point_color,
-                    'type': 'out',
-                },
+                data = self,
                 content = self.point,
             )
     
@@ -126,127 +143,160 @@ class NodeConnectPoint(Container):
         """
         Отменяент изменения drag_will_accept(), когда курсор убирают с цели
         """
-        point_color = self.point_color
-        if isinstance(self.content, Draggable):
-            # self.point_current_color = self.content.data.get('color')
-            point_color = self.point_current_color
-        
-        self.set_point_color(point_color)
-        self.update()
+        self.set_point_color(
+            point_color = (
+                self.current_point_color
+                if self.parameter.is_connected
+                else self.point_color
+            ),
+            is_update = True
+        )
 
 
     def drag_accept(self, e: DragTargetAcceptEvent):
         """
         Принимает контакт
         """
-        src = self.page.get_control(e.src_id)
-
-        src_type = src.data.get('type')
-        src_node_id = src.data.get('node_id')
-        src_value_idx = src.data.get('value_idx')
-        src_color = src.data.get('color')
-        src_cur_node_id = src.data.get('cur_node_id')
-        src_cur_param_idx = src.data.get('cur_param_idx')
-        if src_type == 'in':
-            src_cur_param = self.node.node_area.get_node_parameter(src_cur_node_id, src_cur_param_idx)
-
-        from_param = self.node.node_area.get_node_parameter(src_node_id, src_value_idx)
-
-        # пропускаем связь с самим собой
-        if src_node_id == self.node_id:
-            self.drag_leave(e)
-            return
+        src_data: Union[NodeConnection, NodeConnectPoint] = self.page.get_control(e.src_id).data
         
-        # удаляет связь при перетаскивании входного параметра из другого контакта
-        if src_type == 'in':
-            self.remove_node_from_connects_to(src_cur_param)
-
-        if self.node.connects_from[self.parameter._key] is None:
-            self.add_connects(from_param)
-        elif from_param.id == self.node.connects_from[self.parameter._key].id:
-            self.set_point_color(self.point_current_color, None)
-            self.update()
-            return
-        else:
-            self.remove_node_from_connects_to()
-            self.add_connects(from_param)
-
+        if isinstance(src_data, NodeConnectPoint):
+            self.handle_node_connect_point_data(e, src_data)
             
-        # Обновление цвета и данных Точки контакта
-        data = src.data.copy()
-        data['type'] = 'in'
-        data['cur_node_id'] = self.node_id
-        data['cur_param_idx'] = self.id
+        elif isinstance(src_data, NodeConnection):
+            self.handle_node_connection_data(e, src_data)
 
-        if not isinstance(self.content, Draggable):
-            self.content = Draggable(
-                content = self.content,
-                data = data
-            )
         else:
-            self.content.data = data
-        self.set_point_color(src_color)
-        self.point_current_color = src_color
-            
-        self.node.node_area.paint_line()
+            print("Неизвестный тип src_data")
+
+
+    def handle_node_connect_point_data(self, e: DragTargetAcceptEvent, src_data: "NodeConnectPoint"):
+        """
+        Обрабатывает данные от выходного параметра (NodeConnectPoint)
+        """
+        if src_data.node == self.node:
+            self.drag_leave(e)
+
+        else:
+            if self.parameter.is_connected:
+                if src_data.parameter == self.current_connect.from_param:
+                    self.drag_leave(e)
+
+                else:
+                    from_param: "ParamInterface" = src_data.parameter
+                    self.current_connect.change_from_param(from_param)
+                    self.current_point_color = self.current_connect.path_color
+                    self.set_point_color(
+                        point_color = self.current_point_color,
+                        is_update = True
+                    )
+                    self.node.calculate()
+                    
+            else:
+                from_param: "ParamInterface" = src_data.parameter
+                self.set_current_connect(NodeConnection(
+                    from_param = from_param,
+                    to_param = self.parameter,
+                ))
+                self.node.node_area.add_node_connect(self.current_connect)
+
+    
+    def handle_node_connection_data(self, e: DragTargetAcceptEvent, src_data: NodeConnection):
+        """
+        Обрабатывает данные от подключения к другому параметру (NodeConnection)
+        """
+        if src_data.from_node == self.node or src_data == self:
+            self.drag_leave(e)
+
+        else:
+            if self.parameter.is_connected:
+                self.node.node_area.remove_node_connect(self.current_connect)
+
+                cur_to_point: "NodeConnectPoint" = src_data.to_point
+                cur_to_point.clear_point_on_reconnect(
+                    is_recalculate = self.current_connect.to_node != src_data.to_node
+                )
+
+                src_data.change_to_param(self.parameter)
+                self.set_current_connect(src_data)
+
+            else:
+                cur_to_point: "NodeConnectPoint" = src_data.to_point
+                cur_to_point.clear_point_on_reconnect()
+
+                src_data.change_to_param(self.parameter)
+                self.set_current_connect(src_data)
+
+
+    def set_current_connect(self, connect: NodeConnection):
+        """
+        Устанавливает текущее соединение
+        """
+        self.current_connect = connect
+        self.current_point_color = connect.path_color
+        self.make_draggable_on_connect(self.current_connect)
         self.parameter.set_connect_state(True)
 
 
-    def set_point_color(self, point_color: str = None, border_color: str = colors.BLACK) -> None:
+    def clear_point_on_reconnect(self, is_recalculate: bool = True):
+        """
+        Очищает цвет контакта при переподключении из текущего параметра в другой
+        """
+        self.current_connect = None
+        self.current_point_color = self.point_color
+        self.content.content = self.point
+        self.set_point_color(is_update=True)
+        self.parameter.set_connect_state(
+            is_connected = False,
+            is_recalculate = is_recalculate
+        )
+
+
+    def make_draggable_on_connect(self, connect: NodeConnection):
+        """
+        Переводит контакт в состояние перетаскивания
+        """
+        self.content.content = Draggable(
+            content = self.point,
+            data = connect
+        )
+        self.current_point_color = connect.path_color
+        self.set_point_color(is_update=True)
+
+
+    def set_point_color(self,
+        point_color: str = None,
+        border_color: str = colors.BLACK,
+        is_update: bool = False
+    ) -> None:
         """
         Устанавливает цвет Точки контакта
         """
         if point_color is None:
-            point_color = self.point_color
+            point_color = (
+                self.point_color
+                if self.current_connect is None
+                else self.current_point_color
+            )
         self.point.bgcolor = point_color
         self.point.border = border.all(self.POINT_BORDER_WIDTH, border_color)
+        if is_update:
+            self.update()
 
 
-    def add_connects(self, from_parameter):
+    def clear_connect(self):
         """
-        Добавляет связь с текущим параметром
+        Удаляет соединеие
         """
-        self.add_node_from_connects_to(from_parameter)
-        self.add_coonects_from(from_parameter)
+        if self.parameter.is_connected:
+            self.node.node_area.remove_node_connect(self.current_connect)
+            self.clear_point_on_reconnect()
 
 
-    def add_node_from_connects_to(self, from_parameter):
+    
+
+    def on_point_drag(self, e: DragUpdateEvent):
         """
-        Добавляет ноде источника связь с текущем параметром
+        Обработка перемещения контакта
         """
-        from_node: Node = from_parameter.node
-        from_node.connects_to[from_parameter._key].append(self.parameter)
-            
-
-    def add_coonects_from(self, from_parameter):
-        """
-        Добавляет текущему параметру связь с нодой источника
-        """
-        self.node.connects_from[self.parameter._key] = from_parameter
-
-
-    def remove_node_from_connects_to(self, to_parameter = None, recalculate_and_paint = True):
-        """
-        Удаляет ноде источника связь с текущем параметром
-        """
-        if to_parameter is None:
-            to_parameter = self.parameter
-
-        to_node = to_parameter.node
-
-        from_parameter = to_node.connects_from[to_parameter._key]
-        from_node: Node = from_parameter.node
-
-        to_node.connects_from[to_parameter._key] = None
-        to_parameter.set_connect_state(False, recalculate = recalculate_and_paint)
-
-        to_point = to_parameter.connect_point
-        to_point.point_current_color = to_point.point_color
-        to_point.set_point_color()
-        if isinstance(to_point.content, Draggable):
-            to_point.content = to_point.content.content
-
-        from_node.connects_to[from_parameter._key].remove(to_parameter)
-        
-        if recalculate_and_paint:
-            from_node.node_area.paint_line()
+        print(type(e))
+        print("global", e.global_x, e.global_y)
