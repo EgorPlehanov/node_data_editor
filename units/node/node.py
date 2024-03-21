@@ -133,11 +133,11 @@ class Node(GestureDetector):
         self.function = self.config.function
         self.function_signature = self.get_signature_type_hints()
 
-        self.connects_from: Dict[str, Any] = {
+        self.connects_from: Dict[str, "ParamInterface"] = {
             param.key: None
             for param in self.config.parameters
         }
-        self.connects_to: Dict[str, List] = {
+        self.connects_to: Dict[str, List["ParamInterface"]] = {
             param.key: []
             for param in self.config.parameters
         }
@@ -313,6 +313,7 @@ class Node(GestureDetector):
         self.height = self.get_height()
 
         self.node_area.paint_line()
+        self.content.update()
     
 
     def delete(self, e):
@@ -653,3 +654,7 @@ class Node(GestureDetector):
                 result_control.update_result(result)
                 
         result_area.update()
+
+
+    def __str__(self):
+        return f"Node: id: {self.id}, name: {self.name}"

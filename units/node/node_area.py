@@ -4,7 +4,7 @@ if TYPE_CHECKING:
 
 from flet import *
 import flet.canvas as cv
-from typing import Dict, List, Set
+from typing import Union, List, Set
 
 from .node import Node, NodeConfig
 from .node_connect_point import NodeConnectPoint
@@ -157,45 +157,75 @@ class NodeArea(GestureDetector):
                 page=self.page, node_area=self,
                 scale=self.current_scale, config=config
             ))
-        self.update()
+        self.stack_nodes.update()
         self.update_stats(update_nodes = True)
 
     
-    def delete_node(self, node):
+    def delete_node(self, nodes_to_delete: Union[List[Node], Node]):
         """
         Удалить узел
         """
-        self.delete_node_results(node)
-        # self.delete_node_connect(node) # TODO: ИСПРАВИТЬ 
-        self.nodes.remove(node)
+        if not isinstance(nodes_to_delete, list):
+            nodes_to_delete = [nodes_to_delete]
+
+        self.delete_nodes_connects(nodes_to_delete)
+
+        for node in reversed(nodes_to_delete):
+            # Удаляем результат
+            if node.is_display_result:
+                self.delete_node_results(node)
+
+            # Удаляем из списка выделенных
+            if node.is_selected:
+                self.selected_nodes.remove(node)
+
+            self.nodes.remove(node)
         
-        if node in self.selected_nodes:
-            self.selected_nodes.remove(node)
-        
-        self.paint_line()
         self.workplace.result_area.update()
-        self.workplace.node_stats.update_text("nodes", len(self.nodes))
+        self.stack_nodes.update()
+        self.paint_line()
         self.update_stats(update_all = True)
 
 
-    def delete_node_connect(self, cur_node: Node):
+    def delete_nodes_connects(self, nodes_to_delete: list[Node]):
         '''
         Удаляет соединение между узлами
         '''
         node_to_recalculate = set(
-            to_param.node 
-            for to_param_list in cur_node.connects_to.values() 
-            for to_param in to_param_list
+            to_param.node
+            for node in nodes_to_delete
+            for to_params_list in node.connects_to.values()
+            for to_param in to_params_list
+            if to_param.node not in nodes_to_delete
         )
+        from_nodes_not_delete = set(
+            from_param.node
+            for node in nodes_to_delete
+            for from_param in node.connects_from.values()
+            if (
+                from_param is not None
+                and from_param.node not in nodes_to_delete
+            )
+        )
+        
+        for connect in reversed(self.nodes_connects):
+            is_delete = False
 
-        for to_param_key, from_param in cur_node.connects_from.items():
-            if from_param is not None:
-                connect_point = cur_node.parameters_dict[to_param_key].connect_point
-                connect_point.remove_node_from_connects_to(recalculate_and_paint = False)
+            if connect.from_node in nodes_to_delete:
+                is_delete = True
+                if connect.to_node in node_to_recalculate:
+                    connect.to_node.remove_connect_from(connect.from_param)
+                    connect.to_point.clear_point_on_reconnect(is_recalculate = False)
+                
+            if connect.to_node in nodes_to_delete:
+                is_delete = True
+                if connect.from_node in from_nodes_not_delete:
+                    connect.from_node.remove_connect_to(connect.from_param, connect.to_param)
+                    connect.from_point.clear_point_on_reconnect(is_recalculate = False)
 
-        for to_param_list in cur_node.connects_to.values():
-            for to_param in reversed(to_param_list):
-                to_param.connect_point.remove_node_from_connects_to(recalculate_and_paint = False)
+            if is_delete:
+                self.canvas_connections_shapes.remove(connect.connect_path)
+                self.nodes_connects.remove(connect)
 
         for node in node_to_recalculate:
             node.calculate()
@@ -235,7 +265,7 @@ class NodeArea(GestureDetector):
         for node in reversed(self.selected_nodes):
             node.toggle_selection(is_update=False)
         self.selected_nodes = []
-        self.update()
+        self.stack_nodes.update()
 
 
     def drag_selection(self, top_delta = 0, left_delta = 0):
@@ -244,6 +274,8 @@ class NodeArea(GestureDetector):
         """
         for node in self.selected_nodes:
             node.drag_node(left_delta, top_delta)
+
+        self.stack_nodes.update()
         self.paint_line()
 
 
@@ -253,6 +285,8 @@ class NodeArea(GestureDetector):
         '''
         for node in self.nodes:
             node.drag_node(e.delta_x, e.delta_y)
+
+        self.stack_nodes.update()
         self.paint_line()
     
 
@@ -263,15 +297,14 @@ class NodeArea(GestureDetector):
         for node in self.nodes:
             if not node.is_selected:
                 node.toggle_selection(is_update=False)
-        self.update()
+        self.stack_nodes.update()
 
 
     def delete_selected_nodes(self):
         '''
         Удалить выделенные узлы
         '''
-        for node in reversed(self.selected_nodes):
-            self.delete_node(node)
+        self.delete_node(self.selected_nodes)
         
 
     def invert_selection(self):
@@ -280,7 +313,7 @@ class NodeArea(GestureDetector):
         '''
         for node in self.nodes:
             node.toggle_selection(is_update = False)
-        self.update()
+        self.stack_nodes.update()
 
 
     def move_selection_to_start(self):
@@ -290,6 +323,7 @@ class NodeArea(GestureDetector):
         for idx, node in enumerate(sorted(self.selected_nodes, key=lambda x: x.id)):
             node.top = idx * 30
             node.left = (idx % 5) * 100
+        self.stack_nodes.update()
         self.paint_line()
     
 
@@ -307,6 +341,7 @@ class NodeArea(GestureDetector):
         self.current_scale = new_scale
         self.set_scale(e.local_x, e.local_y, scale_delta)
 
+        self.stack_nodes.update()
         self.paint_line()
         self.update_stats(update_scale = True)
 
@@ -450,13 +485,11 @@ class NodeArea(GestureDetector):
         '''
         Рисует линию соединения
         '''
-        print(len(self.nodes_connects))
-        print(*self.nodes_connects)
+        # print(f"[{', '.join(str(node) for node in self.nodes_connects)}]") # DEBUG
         for connect in self.nodes_connects:
             connect.update_connect_path()
 
         self.canvas_connections.update()
-        self.stack_nodes.update()
     
 
     def create_nodes_connects(self, selected_only: bool = False) -> List[NodeConnection]:

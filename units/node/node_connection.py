@@ -51,6 +51,7 @@ class NodeConnection:
 
     def __str__(self):
         return f"{self.from_node_id}:{self.from_param_id} -> {self.to_node_id}:{self.to_param_id}"
+        # return f"{{from_node_id: {self.from_node_id}, from_param_id: {self.from_param_id}, to_node_id: {self.to_node_id}, to_param_id: {self.to_param_id}}}"
     
 
     def create_connect_path(self) -> cv.Path:
