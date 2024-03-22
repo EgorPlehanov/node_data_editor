@@ -63,7 +63,7 @@ class NodeLibrary:
                             key="dropdown_1", name="Dropdown 1",
                             # default_value = "A",
                             options = [
-                                DropdownOptionItem(key="A", text="Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+                                DropdownOptionItem(key="A", text="Aaaaaaaaaa"),
                                 DropdownOptionItem(key="B", text="B"),
                                 DropdownOptionItem(key="C", text="C"),
                             ]

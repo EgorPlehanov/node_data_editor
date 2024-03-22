@@ -398,7 +398,7 @@ class Node(GestureDetector):
         )
 
         top = self.HEADER_HEIGHT + self.POINT_SIZE // 2 + self.PARAM_PADDING
-        left_out = self.width - 12
+        left_out = self.width - self.POINT_SIZE
 
         for param in self.parameters_dict.values():
             if param.has_connect_point:

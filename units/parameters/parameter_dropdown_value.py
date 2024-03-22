@@ -5,6 +5,7 @@ if TYPE_CHECKING:
 from flet import *
 from dataclasses import dataclass, field
 from typing import List
+from copy import deepcopy
 
 from .parameter_typing import *
 from ..node.node_connect_point import ParameterConnectType
@@ -19,7 +20,9 @@ class DropdownValueParamConfig(ParameterConfigInterface):
     """
     Конфигурация параметра с одним выподающим списком
 
-    default_value - значение параметра (по умолчанию)
+    default_value - значение параметра (по умолчанию указыть DropdownOptionItem.key)
+    include_none - включать ли элемент "Не задано"
+    options - список элементов выподающего списка
     """
     height: int = 30
     default_value: str = None
@@ -61,6 +64,8 @@ class DropdownValueParam(Container, ParamInterface):
         if self._config.has_connect_point:
             self.connect_point = self._create_connect_point()
 
+        print(self.options)
+
 
 
     def set_style(self) -> None:
@@ -69,7 +74,7 @@ class DropdownValueParam(Container, ParamInterface):
         """
         self.__post_init__()
 
-        self.options = self._config.options
+        self.options = deepcopy(self._config.options)
         self.include_none = self._config.include_none
         if self.include_none:
             self.options.insert(0, DropdownOptionItem(key = None, text = 'Не задано'))
@@ -100,10 +105,8 @@ class DropdownValueParam(Container, ParamInterface):
         '''
         Создает основное содержимое параметра
         '''
-        self.ref_main_control_value = Ref[Dropdown]()
-        self.ref_main_control_value_icon = Ref[Icon]()
-        self.ref_main_control_value_container = Ref[Container]()
-        self.ref_main_control_value_popup = Ref[PopupMenuButton]()
+
+        
         return Container(
             expand = True,
             on_hover = self._on_main_control_hover,
@@ -112,52 +115,69 @@ class DropdownValueParam(Container, ParamInterface):
                 vertical_alignment = CrossAxisAlignment.CENTER,
                 controls = [
                     Text(self.name),
-                    PopupMenuButton(
-                        ref = self.ref_main_control_value_popup,
-                        tooltip = self.key_to_text[self.value],
-                        expand = True,
-                        content = Container(
-                            ref = self.ref_main_control_value_container,
-                            on_hover = self._on_main_control_dropdown_hover,
-                            height = self.control_height,
-                            border_radius = 5,
-                            padding = padding.only(right = 5),
-                            border = border.all(1, colors.with_opacity(0, colors.BLACK)),
-                            content = Row(
-                                vertical_alignment = CrossAxisAlignment.CENTER,
-                                spacing = 0,
-                                controls = [
-                                    Icon(
-                                        ref = self.ref_main_control_value_icon,
-                                        name = icons.ARROW_DROP_DOWN,
-                                        color = colors.WHITE,
-                                    ),
-                                    Text(
-                                        expand = True,
-                                        ref = self.ref_main_control_value,
-                                        value = self.key_to_text[self.value],
-                                        text_align = TextAlign.RIGHT,
-                                        no_wrap = True,
-                                        max_lines = 1,
-                                    )
-                                ]
-                            )
-                        ),
-                        items = [
-                            PopupMenuItem(
-                                text = option.text,
-                                on_click = self.on_dropdown_change,
-                                data = option.key
-                            )
-                            for option in self.options
-                        ]
-                    )
+                    self._create_custom_dropdown()
                 ],
             ),
             padding = padding.only(left = 5),
             bgcolor = self.MAIN_COLOR
         )
     
+
+    def _create_custom_dropdown(self) -> PopupMenuButton:
+        """
+        Создает выпадающее меню
+        """
+        self.ref_main_control_value = Ref[Dropdown]()
+        self.ref_main_control_value_icon = Ref[Icon]()
+        self.ref_main_control_value_container = Ref[Container]()
+        self.ref_main_control_value_popup = Ref[PopupMenuButton]()
+
+        dropdown_content_row_icon = Icon(
+            ref = self.ref_main_control_value_icon,
+            name = icons.ARROW_DROP_DOWN,
+            color = colors.WHITE,
+        )
+        dropdown_content_row_text = Text(
+            expand = True,
+            ref = self.ref_main_control_value,
+            value = self.key_to_text[self.value],
+            text_align = TextAlign.RIGHT,
+            no_wrap = True,
+            max_lines = 1,
+        )
+        dropdown_content_row = Row(
+            vertical_alignment = CrossAxisAlignment.CENTER,
+            spacing = 0,
+            controls = [
+                dropdown_content_row_icon,
+                dropdown_content_row_text
+            ]
+        )
+        dropdown_content = Container(
+            ref = self.ref_main_control_value_container,
+            on_hover = self._on_main_control_dropdown_hover,
+            height = self.control_height,
+            border_radius = 5,
+            padding = padding.only(right = 5),
+            border = border.all(1, colors.with_opacity(0, colors.BLACK)),
+            content = dropdown_content_row
+        )
+        dropdown_items = [
+            PopupMenuItem(
+                text = option.text,
+                on_click = self.on_dropdown_change,
+                data = option.key
+            )
+            for option in self.options
+        ]
+        return PopupMenuButton(
+            ref = self.ref_main_control_value_popup,
+            tooltip = self.key_to_text[self.value],
+            expand = True,
+            content = dropdown_content,
+            items = dropdown_items
+        )
+
     
     def _create_connected_control(self) -> Container:
         '''
