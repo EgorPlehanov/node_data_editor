@@ -190,11 +190,12 @@ class NodeConnectPoint(Container):
                     
             else:
                 from_param: "ParamInterface" = src_data.parameter
-                self.set_current_connect(NodeConnection(
+                connect = NodeConnection(
                     from_param = from_param,
                     to_param = self.parameter,
-                ))
-                self.node.node_area.add_node_connect(self.current_connect)
+                )
+                self.node.node_area.add_node_connect(connect)
+                self.set_current_connect(connect)
 
     
     def handle_node_connection_data(self, e: DragTargetAcceptEvent, src_data: NodeConnection):

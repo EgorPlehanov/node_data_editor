@@ -106,6 +106,18 @@ class Node(GestureDetector):
         self.calculate()
 
 
+    def __str__(self):
+        return f"Node: id: {self.id}, name: {self.name}"
+    
+
+    def __hash__(self):
+        return hash(self.id)
+
+
+    def __eq__(self, other):
+        return isinstance(other, Node) and hash(self) == hash(other)
+
+
     def setup_values(self):
         """
         Устанавливает значения по умолчанию
@@ -312,7 +324,7 @@ class Node(GestureDetector):
                 point.top, point.left = point.close_top, point.close_left
         self.height = self.get_height()
 
-        self.node_area.paint_line()
+        self.node_area.update_connects_lines()
         self.content.update()
     
 
@@ -528,7 +540,7 @@ class Node(GestureDetector):
             self.node_area.remove_selection_node(self)
 
 
-    def calculate(self):
+    def calculate(self, is_recalculate_dependent_nodes = True):
         '''
         Вычисляет значение функции
         '''
@@ -539,7 +551,10 @@ class Node(GestureDetector):
             self.result = {"error": str(e)}
         self.set_result_to_out_parameters()
         print(self.id, self.name, self.result) # ОТЛАДКА TEST
-        self.recalculate_connects_to_node()
+
+        if is_recalculate_dependent_nodes:
+            self.node_area.recalculate_dependent_nodes(self)
+
         if self.is_display_result:
             self.display_result()
         
@@ -551,19 +566,6 @@ class Node(GestureDetector):
         common_keys = [key for key in self.result.keys() if key in self.parameters_dict.keys()]
         for res_param in common_keys:
             self.parameters_dict[res_param].value = self.result[res_param]
-
-
-    def recalculate_connects_to_node(self):
-        """
-        Запускает пересчет значений зависимых нод
-        """
-        node_to_recalculate = set(
-            to_param.node
-            for to_param_list in self.connects_to.values() 
-            for to_param in to_param_list
-        )
-        for node in node_to_recalculate:
-            node.calculate()
 
 
     def get_signature_type_hints(self):
@@ -654,7 +656,3 @@ class Node(GestureDetector):
                 result_control.update_result(result)
                 
         result_area.update()
-
-
-    def __str__(self):
-        return f"Node: id: {self.id}, name: {self.name}"

@@ -4,7 +4,8 @@ if TYPE_CHECKING:
 
 from flet import *
 import flet.canvas as cv
-from typing import Union, List, Set
+from typing import Union, List, Set, Dict
+from collections import defaultdict, deque
 
 from .node import Node, NodeConfig
 from .node_connect_point import NodeConnectPoint
@@ -132,7 +133,8 @@ class NodeArea(GestureDetector):
         update_nodes = False,
         update_selected = False,
         update_scale = False,
-        update_edges = False
+        update_edges = False,
+        cycles = None
     ):
         """
         Обновить статистику
@@ -145,7 +147,8 @@ class NodeArea(GestureDetector):
             self.workplace.node_stats.update_text("scale", self.current_scale)
         if update_edges or update_all:
             self.workplace.node_stats.update_text("edges", len(self.nodes_connects))
-
+        if cycles is not None:
+            self.workplace.node_stats.update_text("cycles", cycles)
 
     def add_node(self, config: NodeConfig, ref_text_counter: Ref[Text] = None):
         """
@@ -183,7 +186,7 @@ class NodeArea(GestureDetector):
         
         self.workplace.result_area.update()
         self.stack_nodes.update()
-        self.paint_line()
+        self.update_connects_lines()
         self.update_stats(update_all = True)
 
 
@@ -276,7 +279,7 @@ class NodeArea(GestureDetector):
             node.drag_node(left_delta, top_delta)
 
         self.stack_nodes.update()
-        self.paint_line()
+        self.update_connects_lines()
 
 
     def drag_all(self, e):
@@ -287,7 +290,7 @@ class NodeArea(GestureDetector):
             node.drag_node(e.delta_x, e.delta_y)
 
         self.stack_nodes.update()
-        self.paint_line()
+        self.update_connects_lines()
     
 
     def select_all(self):
@@ -324,7 +327,7 @@ class NodeArea(GestureDetector):
             node.top = idx * 30
             node.left = (idx % 5) * 100
         self.stack_nodes.update()
-        self.paint_line()
+        self.update_connects_lines()
     
 
     def scroll_scale_node_area(self, e: ScrollEvent):
@@ -342,7 +345,7 @@ class NodeArea(GestureDetector):
         self.set_scale(e.local_x, e.local_y, scale_delta)
 
         self.stack_nodes.update()
-        self.paint_line()
+        self.update_connects_lines()
         self.update_stats(update_scale = True)
 
 
@@ -454,6 +457,7 @@ class NodeArea(GestureDetector):
         self.selection_box.visible = False
         self.selection_box_stroke.visible = False
         self.select_all_in_selection_box()
+
         self.canvas_selection_box.update()
         self.stack_nodes.update()
 
@@ -481,7 +485,7 @@ class NodeArea(GestureDetector):
                     node.toggle_selection(is_update=False)
 
 
-    def paint_line(self, selected_only = False):
+    def update_connects_lines(self, selected_only = False):
         '''
         Рисует линию соединения
         '''
@@ -528,19 +532,165 @@ class NodeArea(GestureDetector):
         }
     
 
-    def update_connects_lines(self, nodes_to_update: List[Node]):
+    def recalculate_dependent_nodes(self, start_node: List[Node] = None):
         '''
-        Обновляет линии соединений
+        Пересчитывает зависимые узлы или все если start_node не указан
         '''
-        pass
+        recalculate_node_queue: List[Node] = (
+            self.topological_sort_all(node)
+            if start_node is None
+            else self.topological_sort_from_node(start_node)
+        )
+        
+        cycles = self.find_cycles()
+        self.update_stats(cycles=cycles)
+        if len(cycles) != 0:
+            return
+        
+        for node in recalculate_node_queue:
+            node.calculate(is_recalculate_dependent_nodes=False)
 
 
-    def drag_connects_lines(self, delta_x: int, delta_y: int, nodes_to_update: List[NodeConnection] = None):
-        '''
-        Перетаскивает линии соединений
-        '''
-        if nodes_to_update is None:
-            nodes_to_update = self.nodes_connects
-        for node in nodes_to_update:
-            node.drag_connect_path(delta_x, delta_y)
+    def get_graph(self) -> Dict[Node, List[Node]]:
+        """
+        Функция для создания графа из списка связей
+        """
+        graph = {}
+        for connect in self.nodes_connects:
+            if connect.from_node not in graph:
+                graph[connect.from_node] = []
+            graph[connect.from_node].append(connect.to_node)
+        return graph
+
+
+    def topological_sort_from_node(self, start_node) -> List[Node]:
+        """
+        Выполняет топологическую сортировку для заданного исходного узла
+        Возвращает список узлов в топологическом порядке начиная со следающего после start_node
+        """
+        graph = self.get_graph()
+
+        if self.has_cycle(graph, start_node):
+            return None
+
+        # Функция для рекурсивной топологической сортировки
+        def dfs(node, visited, result):
+            visited.add(node)
+            if node in graph:
+                for neighbor in graph[node]:
+                    if neighbor not in visited:
+                        dfs(neighbor, visited, result)
+            result.append(node)
+
+        result = []
+        visited = set()
+        dfs(start_node, visited, result)
+
+        return result[::-1][1:]
     
+
+    def topological_sort_all(self) -> List[Node]:
+        """
+        Выполняет топологическую сортировку алгоритм Кана для определения
+        оптимального порядка обновления функций для всех узлов в графе 
+        """
+        # Инициализация словаря для хранения входящих рёбер для каждого узла
+        in_degree = defaultdict(int)
+        # Инициализация словаря для хранения списка смежных узлов для каждого узла
+        graph = defaultdict(list)
+        
+        # Заполнение словарей на основе связей
+        for connect in self.nodes_connects:
+            graph[connect.from_node].append(connect.to_node)
+            in_degree[connect.to_node] += 1
+        
+        # Инициализация списка узлов без входящих рёбер
+        zero_in_degree_nodes = deque([node for node in graph if in_degree[node] == 0])
+        
+        # Процесс топологической сортировки
+        result = []
+        while zero_in_degree_nodes:
+            node = zero_in_degree_nodes.popleft()
+            result.append(node)
+            for neighbor in graph[node]:
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    zero_in_degree_nodes.append(neighbor)
+        
+        # Проверка наличия цикла
+        if len(result) != len(graph):
+            return None  # Граф содержит цикл
+        else:
+            return result  # Топологическая сортировка выполнена успешно
+        
+
+    def has_cycle(self, graph: Dict[Node, List[Node]] = None, start_node: Node = None) -> bool:
+        """
+        Проверяет наличие циклов в графе с использованием алгоритма поиска в глубину (DFS).
+        """
+        # Функция для поиска циклов
+        def dfs(node):
+            if node in on_path:
+                return True
+            if node in visited:
+                return False
+
+            visited.add(node)
+            on_path.add(node)
+
+            if node in graph:
+                for neighbor in graph[node]:
+                    if dfs(neighbor):
+                        return True
+
+            on_path.remove(node)
+            return False
+
+        if graph is None:
+            graph = self.get_graph()
+
+        # Маркеры для отслеживания посещенных узлов и узлов на текущем пути
+        visited = set()
+        on_path = set()
+
+        # Запускаем поиск в глубину из каждого узла графа
+        if start_node is None:
+            for node in graph:
+                if dfs(node):
+                    return True
+        else:
+            if dfs(start_node):
+                return True
+
+        return False
+    
+
+    def find_cycles(self, graph: Dict[Node, List[Node]] = None) -> List[List[Node]]:
+        """
+        Функция для поиска всех циклов в графе
+        """
+        if graph is None:
+            graph = self.get_graph()
+
+        def dfs(node, visited, current_path):
+            visited[node] = True
+            current_path.append(node)
+            
+            if node in graph:
+                for neighbor in graph[node]:
+                    if neighbor not in current_path:
+                        if neighbor not in visited:
+                            dfs(neighbor, visited, current_path)
+                    else:
+                        index = current_path.index(neighbor)
+                        cycle = current_path[index:]
+                        cycles.append(cycle)
+            
+            current_path.pop()
+        
+        cycles = []
+        visited = {}
+        for node in graph:
+            if node not in visited:
+                dfs(node, visited, [])
+        return cycles
