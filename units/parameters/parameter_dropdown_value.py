@@ -3,6 +3,7 @@ if TYPE_CHECKING:
     from ..node.node import Node
 
 from .parameter_typing import *
+from ..data_types import ParameterConnectType
 
 from flet import *
 from typing import List

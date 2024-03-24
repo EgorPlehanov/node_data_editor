@@ -1,11 +1,13 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..node_area.node_area import NodeArea
+    from ..parameters import ParameterInterface
 
 from .node_config import NodeConfig
-from ..parameters import ParameterInterface, type_to_param, ParameterConnectType
+from ..parameters import type_to_param
 from ..calculate_function import NodeResult
 from ..result_area import ResultView
+from ..data_types import ParameterConnectType
 
 from flet import *
 from itertools import count
@@ -110,11 +112,11 @@ class Node(GestureDetector):
         self.function = self.config.function
         self.function_signature = self.get_signature_type_hints()
 
-        self.connects_from: Dict[str, ParameterInterface] = {
+        self.connects_from: Dict[str, "ParameterInterface"] = {
             param.key: None
             for param in self.config.parameters
         }
-        self.connects_to: Dict[str, List[ParameterInterface]] = {
+        self.connects_to: Dict[str, List["ParameterInterface"]] = {
             param.key: []
             for param in self.config.parameters
         }
@@ -124,28 +126,28 @@ class Node(GestureDetector):
         }
 
 
-    def add_connect_to(self, param_from: ParameterInterface, param_to: ParameterInterface) -> None:
+    def add_connect_to(self, param_from: "ParameterInterface", param_to: "ParameterInterface") -> None:
         """
         Добавляет связь из текущего параметра в зависимый параметр
         """
         self.connects_to[param_from._key].append(param_to)
 
 
-    def add_connect_from(self, param_from: ParameterInterface, param_to: ParameterInterface) -> None:
+    def add_connect_from(self, param_from: "ParameterInterface", param_to: "ParameterInterface") -> None:
         """
         Добавляет связь из параметра источника в параметр текущего узла
         """
         self.connects_from[param_to._key] = param_from
 
 
-    def remove_connect_to(self, param_from: ParameterInterface, param_to: ParameterInterface) -> None:
+    def remove_connect_to(self, param_from: "ParameterInterface", param_to: "ParameterInterface") -> None:
         """
         Удаляет связь из текущего параметра в зависимый параметр
         """
         self.connects_to[param_from._key].remove(param_to)
 
 
-    def remove_connect_from(self, param_to: ParameterInterface) -> None:
+    def remove_connect_from(self, param_to: "ParameterInterface") -> None:
         """
         Удаляет связь из параметра источника в параметр текущего узла
         """

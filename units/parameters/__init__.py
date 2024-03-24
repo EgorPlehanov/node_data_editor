@@ -1,4 +1,4 @@
-from .parameter_typing import ParameterConnectType, ParameterInterface
+from .parameter_typing import ParameterInterface
 
 from .parameters_dict import type_to_param
 

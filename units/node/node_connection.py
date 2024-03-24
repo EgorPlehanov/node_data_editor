@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .node_connect_point import NodeConnectPoint
+    from ..parameters.parameter_typing.parameter_connect_point import ParameterConnectPoint
     from ..parameters import ParameterInterface
     from ..node_area import NodeArea
     from .node import Node
@@ -33,7 +33,7 @@ class NodeConnection:
         self.from_param_id: int = self.from_param.id
         self.from_node: "Node" = self.from_param.node
         self.from_node_id: int = self.from_node.id
-        self.from_point: "NodeConnectPoint" = self.from_param.connect_point
+        self.from_point: "ParameterConnectPoint" = self.from_param.connect_point
 
         self.path_color: str = self.from_point.point_color
 
@@ -41,7 +41,7 @@ class NodeConnection:
         self.to_param_id: int = self.to_param.id
         self.to_node: "Node" = self.to_param.node
         self.to_node_id: int = self.to_node.id
-        self.to_point: "NodeConnectPoint" = self.to_param.connect_point
+        self.to_point: "ParameterConnectPoint" = self.to_param.connect_point
 
         self.connect_path: cv.Path = self.create_connect_path()
 
@@ -113,7 +113,7 @@ class NodeConnection:
         ]
     
 
-    def calculate_coord(self, point: "NodeConnectPoint") -> Tuple[int, int]:
+    def calculate_coord(self, point: "ParameterConnectPoint") -> Tuple[int, int]:
         """
         Рассчитывает координаты точки
         """
@@ -193,7 +193,7 @@ class NodeConnection:
         self.from_param_id: int = self.from_param.id
         self.from_node: "Node" = self.from_param.node
         self.from_node_id: int = self.from_node.id
-        self.from_point: "NodeConnectPoint" = self.from_param.connect_point
+        self.from_point: "ParameterConnectPoint" = self.from_param.connect_point
         self.path_color: str = self.from_point.point_color
         self.path_paint.color = self.path_color
 
@@ -215,7 +215,7 @@ class NodeConnection:
         self.to_param_id: int = self.to_param.id
         self.to_node: "Node" = self.to_param.node
         self.to_node_id: int = self.to_node.id
-        self.to_point: "NodeConnectPoint" = self.to_param.connect_point
+        self.to_point: "ParameterConnectPoint" = self.to_param.connect_point
 
         self.from_node.add_connect_to(self.from_param, self.to_param)
         self.to_node.add_connect_from(self.from_param, self.to_param)

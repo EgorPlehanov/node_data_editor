@@ -1,17 +1,17 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .node import Node
-    from ..parameters import ParameterInterface
+    from ...node.node import Node
+    from .. import ParameterInterface
 
-from ..parameters import ParameterConnectType
-from .node_connection import NodeConnection
+from ...data_types import ParameterConnectType
+from ...node.node_connection import NodeConnection
 
 from flet import *
 from typing import Any, Union
 
 
 
-class NodeConnectPoint(Container):
+class ParameterConnectPoint(Container):
     """
     Класс для отрисовки точки контакта нод
     Используется для подключения параметров
@@ -61,7 +61,7 @@ class NodeConnectPoint(Container):
     
     def __eq__(self, other) -> bool:
         return (
-            isinstance(other, NodeConnectPoint)
+            isinstance(other, ParameterConnectPoint)
             and self.id == other.id
         )
     
@@ -139,9 +139,9 @@ class NodeConnectPoint(Container):
         """
         Принимает контакт
         """
-        src_data: Union[NodeConnection, NodeConnectPoint] = self.page.get_control(e.src_id).data
+        src_data: Union[NodeConnection, ParameterConnectPoint] = self.page.get_control(e.src_id).data
         
-        if isinstance(src_data, NodeConnectPoint):
+        if isinstance(src_data, ParameterConnectPoint):
             self.handle_node_connect_point_data(e, src_data)
             
         elif isinstance(src_data, NodeConnection):
@@ -151,7 +151,7 @@ class NodeConnectPoint(Container):
             print("Неизвестный тип src_data")
 
 
-    def handle_node_connect_point_data(self, e: DragTargetAcceptEvent, src_data: "NodeConnectPoint") -> None:
+    def handle_node_connect_point_data(self, e: DragTargetAcceptEvent, src_data: "ParameterConnectPoint") -> None:
         """
         Обрабатывает данные от выходного параметра (NodeConnectPoint)
         """
@@ -194,7 +194,7 @@ class NodeConnectPoint(Container):
             if self.parameter.is_connected:
                 self.node_area_connections.remove_node_connect(self.current_connect)
 
-                cur_to_point: NodeConnectPoint = src_data.to_point
+                cur_to_point: ParameterConnectPoint = src_data.to_point
                 cur_to_point.clear_point_on_reconnect(
                     is_recalculate = self.current_connect.to_node != src_data.to_node
                 )
@@ -203,7 +203,7 @@ class NodeConnectPoint(Container):
                 self.set_current_connect(src_data)
 
             else:
-                cur_to_point: NodeConnectPoint = src_data.to_point
+                cur_to_point: ParameterConnectPoint = src_data.to_point
                 cur_to_point.clear_point_on_reconnect()
 
                 src_data.change_to_param(self.parameter)

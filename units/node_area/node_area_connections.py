@@ -2,8 +2,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .node_area import NodeArea
     from ..node.node import Node
-
-from ..node.node_connection import NodeConnection
+    from ..node import NodeConnection
 
 from flet import *
 import flet.canvas as cv
@@ -20,7 +19,7 @@ class NodeAreaConnections(cv.Canvas):
         self,
         page: Page,
         node_area: 'NodeArea',
-        nodes_connects:  List[NodeConnection],
+        nodes_connects:  List["NodeConnection"],
         connections_shapes: List[cv.Path]
     ):
         super().__init__()
@@ -30,7 +29,7 @@ class NodeAreaConnections(cv.Canvas):
         self.shapes = connections_shapes
 
 
-    def add_node_connect(self, node_connection: NodeConnection) -> None:
+    def add_node_connect(self, node_connection: "NodeConnection") -> None:
         """
         Добавить соединение
         """
@@ -43,7 +42,7 @@ class NodeAreaConnections(cv.Canvas):
         self.node_area.update_stats(update_edges = True)
 
 
-    def add_node_from_to_connect(self, node_connection: NodeConnection) -> None:
+    def add_node_from_to_connect(self, node_connection: "NodeConnection") -> None:
         """
         Добавить соединение в словари ноды
         """
@@ -51,7 +50,7 @@ class NodeAreaConnections(cv.Canvas):
         node_connection.to_node.add_connect_from(node_connection.from_param,  node_connection.to_param)
 
     
-    def remove_node_connect(self, node_connection: NodeConnection) -> None:
+    def remove_node_connect(self, node_connection: "NodeConnection") -> None:
         """
         Удалить соединение
         """
@@ -64,7 +63,7 @@ class NodeAreaConnections(cv.Canvas):
         self.node_area.update_stats(update_edges = True)
 
 
-    def remove_node_from_to_connect(self, node_connection: NodeConnection) -> None:
+    def remove_node_from_to_connect(self, node_connection: "NodeConnection") -> None:
         """
         Удалить соединение из словарей ноды
         """

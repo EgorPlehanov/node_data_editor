@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...node.node import Node
 
-from ...node import NodeConnectPoint, ParameterConnectType
+from .parameter_connect_point import ParameterConnectPoint
 from .parameter_type import ParameterType
-# from .parameter_connect_type import ParameterConnectType
+from ...data_types import ParameterConnectType
 
 from abc import ABC, abstractmethod
 from typing import Any
@@ -37,7 +37,7 @@ class ParameterInterface(ABC):
     has_connect_point: bool = False
     connect_point_color: str = None
     
-    connect_point: NodeConnectPoint = None
+    connect_point: ParameterConnectPoint = None
 
     def __init__(self):
         self.id = next(self.id_counter)
@@ -84,8 +84,8 @@ class ParameterInterface(ABC):
         self.node.calculate()
 
 
-    def _create_connect_point(self) -> NodeConnectPoint:
-        return NodeConnectPoint(
+    def _create_connect_point(self) -> ParameterConnectPoint:
+        return ParameterConnectPoint(
             node = self.node,
             parameter = self,
             id = self.id,
