@@ -1,24 +1,35 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from ..parameters.parameter_typing import ParamInterface
     from .node_connect_point import NodeConnectPoint
+    from ..parameters import ParameterInterface
+    from ..node_area import NodeArea
     from .node import Node
-    from .node_area import NodeArea
 
 from flet import *
 import flet.canvas as cv
-from typing import List
+from typing import List, Tuple
 
 
 
 class NodeConnection:
+    """
+    Соединение двух параметров
+
+    содержит ссылки на источник и принимающий параметр,
+    а также объект пути их соединения
+    """
+
     LINE_LEN: int = 10
     STEEPNESS: int = 70
 
-    def __init__(self, from_param: "ParamInterface", to_param: "ParamInterface"):
+    def __init__(
+        self,
+        from_param: "ParameterInterface",
+        to_param: "ParameterInterface"
+    ):
         self.node_area: "NodeArea" = from_param.node.node_area
 
-        self.from_param: "ParamInterface" = from_param
+        self.from_param: "ParameterInterface" = from_param
         self.from_param_id: int = self.from_param.id
         self.from_node: "Node" = self.from_param.node
         self.from_node_id: int = self.from_node.id
@@ -26,7 +37,7 @@ class NodeConnection:
 
         self.path_color: str = self.from_point.point_color
 
-        self.to_param: "ParamInterface" = to_param
+        self.to_param: "ParameterInterface" = to_param
         self.to_param_id: int = self.to_param.id
         self.to_node: "Node" = self.to_param.node
         self.to_node_id: int = self.to_node.id
@@ -35,27 +46,29 @@ class NodeConnection:
         self.connect_path: cv.Path = self.create_connect_path()
 
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((
             self.from_node_id, self.from_param_id,
             self.to_node_id, self.to_param_id
         ))
     
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (
             isinstance(other, NodeConnection)
             and hash(self) == hash(other)
         )
     
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.from_node_id}:{self.from_param_id} -> {self.to_node_id}:{self.to_param_id}"
         # return f"{{from_node_id: {self.from_node_id}, from_param_id: {self.from_param_id}, to_node_id: {self.to_node_id}, to_param_id: {self.to_param_id}}}"
     
 
     def create_connect_path(self) -> cv.Path:
-        '''Создает путь соединения'''
+        '''
+        Создает путь соединения
+        '''
         self.path_paint = Paint(
             stroke_width = 2,
             style = PaintingStyle.STROKE,
@@ -100,7 +113,7 @@ class NodeConnection:
         ]
     
 
-    def calculate_coord(self, point: "NodeConnectPoint"):
+    def calculate_coord(self, point: "NodeConnectPoint") -> Tuple[int, int]:
         """
         Рассчитывает координаты точки
         """
@@ -118,7 +131,7 @@ class NodeConnection:
         return node.left + point_left_scl, node.top + point_top_scl
     
 
-    def update_connect_path(self):
+    def update_connect_path(self) -> None:
         '''
         Обновляет путь соединения
         '''
@@ -126,7 +139,7 @@ class NodeConnection:
         self.update_connect_path_to_param()
 
 
-    def update_connect_path_from_param(self):
+    def update_connect_path_from_param(self) -> None:
         '''
         Обновляет путь соединения от источника параметра
         '''
@@ -134,7 +147,7 @@ class NodeConnection:
         self.set_update_connect_path_from_param(from_left, from_top)
 
 
-    def set_update_connect_path_from_param(self, from_left: int, from_top: int):
+    def set_update_connect_path_from_param(self, from_left: int, from_top: int) -> None:
         '''
         Устанавливает путь соединения от источника параметра
         '''
@@ -148,7 +161,7 @@ class NodeConnection:
         self.path_to_indent.cp1y = from_top
 
 
-    def update_connect_path_to_param(self):
+    def update_connect_path_to_param(self) -> None:
         '''
         Обновляет путь соединения к принимающему параметру
         '''
@@ -156,7 +169,7 @@ class NodeConnection:
         self.set_update_connect_path_to_param(to_left, to_top)
     
 
-    def set_update_connect_path_to_param(self, to_left: int, to_top: int):
+    def set_update_connect_path_to_param(self, to_left: int, to_top: int) -> None:
         '''
         Устанавливает путь соединения к принимающему параметру
         '''
@@ -169,14 +182,14 @@ class NodeConnection:
         self.path_to_point.y = to_top
 
 
-    def change_from_param(self, from_param: "ParamInterface"):
+    def change_from_param(self, from_param: "ParameterInterface") -> None:
         """
         Изменяет источник параметра
         """
         self.from_node.remove_connect_to(self.from_param, self.to_param)
         self.to_node.remove_connect_from(self.to_param)
 
-        self.from_param: "ParamInterface" = from_param
+        self.from_param: "ParameterInterface" = from_param
         self.from_param_id: int = self.from_param.id
         self.from_node: "Node" = self.from_param.node
         self.from_node_id: int = self.from_node.id
@@ -191,14 +204,14 @@ class NodeConnection:
         self.connect_path.update()
 
 
-    def change_to_param(self, to_param: "ParamInterface"):
+    def change_to_param(self, to_param: "ParameterInterface") -> None:
         '''
         Изменяет принимающий параметр
         '''
         self.from_node.remove_connect_to(self.from_param, self.to_param)
         self.to_node.remove_connect_from(self.to_param)
 
-        self.to_param: "ParamInterface" = to_param
+        self.to_param: "ParameterInterface" = to_param
         self.to_param_id: int = self.to_param.id
         self.to_node: "Node" = self.to_param.node
         self.to_node_id: int = self.to_node.id
@@ -211,7 +224,7 @@ class NodeConnection:
         self.connect_path.update()
 
 
-    def drag_connect_path(self, delta_x: int, delta_y: int):
+    def drag_connect_path(self, delta_x: int, delta_y: int) -> None:
         '''
         Перемещает путь соединения
         '''

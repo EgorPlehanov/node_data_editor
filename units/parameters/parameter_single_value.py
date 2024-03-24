@@ -2,11 +2,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..node.node import Node
 
+from .parameter_typing import *
+
 from flet import *
 from dataclasses import dataclass
-
-from .parameter_typing import *
-from ..node.node_connect_point import ParameterConnectType
 
 
 
@@ -20,6 +19,7 @@ class SingleValueParamConfig(ParameterConfigInterface):
     min_value - минимальное значение
     max_value - максимальное значение
     """
+    
     default_value: int | float = 0
     velue_step: int | float = 1
     min_value: int | float = None
@@ -39,17 +39,24 @@ class SingleValueParamConfig(ParameterConfigInterface):
 
 
 
-class SingleValueParam(Container, ParamInterface):
+class SingleValueParam(Container, ParameterInterface):
     '''
     Параметр с одним значением
     '''
-    def __init__(self, node: 'Node', config: SingleValueParamConfig = SingleValueParamConfig()):
+
+    def __init__(
+        self,
+        node: 'Node',
+        config: SingleValueParamConfig = SingleValueParamConfig()
+    ):
         self._type: ParameterType = ParameterType.SINGLE_VALUE
         self._connect_type: ParameterConnectType = ParameterConnectType.IN
 
         self.node = node
         self._config: SingleValueParamConfig = config
+        
         super().__init__()
+        self.__post_init__()
 
         self.set_style()
         
@@ -68,8 +75,6 @@ class SingleValueParam(Container, ParamInterface):
         """
         Устанавливает стиль параметра
         """
-        self.__post_init__()
-        
         self.value_step = self._config.velue_step
         self.min_value = self._config.min_value
         self.max_value = self._config.max_value

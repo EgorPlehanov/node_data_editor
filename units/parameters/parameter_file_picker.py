@@ -2,12 +2,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..node.node import Node
 
+from .parameter_typing import *
+from ..data_types import File
+
 from flet import *
 from dataclasses import dataclass, field
 from typing import List
-
-from .parameter_typing import *
-from ..node.node_connect_point import ParameterConnectType
 
 
 
@@ -21,6 +21,7 @@ class FilePickerParamConfig(ParameterConfigInterface):
     file_type - тип выбираемого файла
     allowed_extensions - допустимые расширения выбираемого файла
     """
+
     height: int = 30
     default_value: File = None
     dialog_title: str = 'Выбор файла'
@@ -43,17 +44,24 @@ class FilePickerParamConfig(ParameterConfigInterface):
 
 
 
-class FilePickerParam(Container, ParamInterface):
+class FilePickerParam(Container, ParameterInterface):
     '''
     Параметр с одним булевым значением
     '''
-    def __init__(self, node: 'Node', config: FilePickerParamConfig = FilePickerParamConfig()):
+    
+    def __init__(
+        self,
+        node: 'Node',
+        config: FilePickerParamConfig = FilePickerParamConfig()
+    ):
         self._type: ParameterType = ParameterType.FILE_PICKER_VALUE
         self._connect_type: ParameterConnectType = ParameterConnectType.IN
 
         self.node = node
         self._config: FilePickerParamConfig = config
+
         super().__init__()
+        self.__post_init__()
 
         self.set_style()
         
@@ -75,8 +83,6 @@ class FilePickerParam(Container, ParamInterface):
         """
         Устанавливает стиль параметра
         """
-        self.__post_init__()
-
         self.dialog_title = self._config.dialog_title
         self.initial_directory = self._config.initial_directory
         self.file_type = self._config.file_type

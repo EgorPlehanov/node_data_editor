@@ -2,11 +2,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..node.node import Node
 
+from .parameter_typing import *
+
 from flet import *
 from dataclasses import dataclass
-
-from .parameter_typing import *
-from ..node.node_connect_point import ParameterConnectType
 
 
 
@@ -20,6 +19,7 @@ class TextValueParamConfig(ParameterConfigInterface):
     capitalization - капитализация текста
     hint_text - подсказка
     """
+    
     default_value: str = ''
     capitalization: TextCapitalization = TextCapitalization.NONE
     hint_text: str = ''
@@ -37,17 +37,24 @@ class TextValueParamConfig(ParameterConfigInterface):
 
 
 
-class TextValueParam(Container, ParamInterface):
+class TextValueParam(Container, ParameterInterface):
     '''
     Параметр с одним булевым значением
     '''
-    def __init__(self, node: 'Node', config: TextValueParamConfig = TextValueParamConfig()):
+
+    def __init__(
+        self,
+        node: 'Node',
+        config: TextValueParamConfig = TextValueParamConfig()
+    ):
         self._type: ParameterType = ParameterType.TEXT_VALUE
         self._connect_type: ParameterConnectType = ParameterConnectType.IN
 
         self.node = node
         self._config: TextValueParamConfig = config
+        
         super().__init__()
+        self.__post_init__()
 
         self.set_style()
         
@@ -60,13 +67,10 @@ class TextValueParam(Container, ParamInterface):
             self.connect_point = self._create_connect_point()
 
 
-
     def set_style(self) -> None:
         """
         Устанавливает стиль параметра
         """
-        self.__post_init__()
-
         self.capitalization = self._config.capitalization
         self.hint_text = self._config.hint_text
 
@@ -137,7 +141,7 @@ class TextValueParam(Container, ParamInterface):
         )
     
 
-    def _on_enter_focus(self, e: ControlEvent):
+    def _on_enter_focus(self, e: ControlEvent) -> None:
         '''
         При фокусе изменяет цвет
         '''
@@ -190,3 +194,4 @@ class TextValueParam(Container, ParamInterface):
 
         self.is_enter_focused = False
         self.set_main_control_bgcolor()
+    

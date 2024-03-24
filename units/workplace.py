@@ -1,28 +1,34 @@
+from .result_area import ResultArea
+from .node_area import NodeArea
+from .statistics_panel import StatisticsPanel
+from .menubar.menubar import FunctionMenuBar
+
 from flet import *
 from typing import List
-from .result_area import ResultArea
-from .node.node_area import NodeArea
-from .statistics_panel import NodeStatisticsPanel
-from .menubar import FunctionMenuBar
 
 
 
 class Workplace(Column):
-    def __init__(self, app, page: Page):
+    """
+    Рабочая область приложения
+    """
+
+    def __init__(
+        self,
+        app,    # Может быть переданно при интеграции с другим приложением
+        page: Page
+    ):
         super().__init__()
         self.app = app
         self.page = page
-    # def __init__(self, page: Page):
-    #     super().__init__()
-    #     self.page = page
 
         self.spacing = 0
         self.expand = True
 
-        self.result_area = ResultArea(page, self)
-        self.node_area = NodeArea(page, self)
-        self.node_stats = NodeStatisticsPanel(page, self)
         self.menubar = FunctionMenuBar(page, self)
+        self.result_area = ResultArea(page, self)
+        self.node_stats = StatisticsPanel(page, self)
+        self.node_area = NodeArea(page, self)
 
         self.controls = self.create_controls()
 
@@ -30,52 +36,60 @@ class Workplace(Column):
 
 
     def create_controls(self) -> List[Container]:
+        """
+        Создает элементы рабочей области
+        """
         self.ref_node_area_container = Ref[Container]()
         self.ref_result_area_container = Ref[Container]()
-        return [
-            Container(
-                Row([self.menubar]),
-                bgcolor=colors.GREY_900,
+
+        menubar_container = Container(
+            Row([self.menubar]),
+            # bgcolor=colors.GREY_900,
+        )
+        node_area_container = Container(
+            ref = self.ref_node_area_container,
+            content = Column(
+                controls = [
+                    Container(self.node_area, expand=True),
+                    Container(
+                        self.node_stats,
+                        bgcolor = "#111111",
+                        padding = 5,
+                    ),
+                ],
+                spacing = 0,
             ),
+            expand = 3,
+            bgcolor = colors.BLACK38,
+        )
+        vertical_divider = GestureDetector(
+            content = VerticalDivider(
+                thickness = 5,
+                width = 5,
+                color = colors.GREY_900,
+            ),
+            mouse_cursor = MouseCursor.RESIZE_COLUMN,
+            drag_interval = 20,
+            on_enter = self.hover_divider,
+            on_exit = self.hover_exit_divider,
+            on_horizontal_drag_start = self.drag_start_divider,
+            on_horizontal_drag_update = self.resize_columns,
+            on_horizontal_drag_end = self.drag_end_divider
+        )
+        result_area_container = Container(
+            ref = self.ref_result_area_container,
+            content = self.result_area,
+            bgcolor = colors.GREY_900,
+            expand = 1,
+        )
+        return [
+            menubar_container,
             Container(
                 content = Row(
                     controls = [
-                        Container(
-                            ref = self.ref_node_area_container,
-                            content = Column(
-                                controls = [
-                                    Container(self.node_area, expand=True),
-                                    Container(
-                                        self.node_stats,
-                                        bgcolor = "#111111",
-                                        padding = 5,
-                                    ),
-                                ],
-                                spacing = 0,
-                            ),
-                            expand = 3,
-                            bgcolor = colors.BLACK38,
-                        ),
-                        GestureDetector(
-                            content = VerticalDivider(
-                                thickness = 5,
-                                width = 5,
-                                color = colors.GREY_900,
-                            ),
-                            mouse_cursor = MouseCursor.RESIZE_COLUMN,
-                            drag_interval = 20,
-                            on_enter = self.hover_divider,
-                            on_exit = self.hover_exit_divider,
-                            on_horizontal_drag_start = self.drag_start_divider,
-                            on_horizontal_drag_update = self.resize_columns,
-                            on_horizontal_drag_end = self.drag_end_divider
-                        ),
-                        Container(
-                            ref = self.ref_result_area_container,
-                            content = self.result_area,
-                            bgcolor = colors.GREY_900,
-                            expand = 1,
-                        )
+                        node_area_container,
+                        vertical_divider,
+                        result_area_container
                     ],
                     spacing = 0,
                     expand = True,

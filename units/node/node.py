@@ -1,66 +1,26 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .node_area import NodeArea
+    from ..node_area.node_area import NodeArea
+
+from .node_config import NodeConfig
+from ..parameters import ParameterInterface, type_to_param, ParameterConnectType
+from ..calculate_function import NodeResult
+from ..result_area import ResultView
 
 from flet import *
 from itertools import count
-from typing import Callable, List, Dict, get_type_hints
+from typing import List, Dict, Any, get_type_hints
 from inspect import signature
-from dataclasses import dataclass, field
 import math
 import keyboard
-
-from .node_typing import Color
-from ..parameters.parameters_dict import *
-from .calculate_function.calculate_function_typing import *
-from .node_result_view import *
-
-
-
-@dataclass
-class NodeConfig:
-    """
-    Конфигурация узла
-    
-    key - ключ узла
-    name - название узла
-    icon - иконка узла
-    group - группа узла
-    color - цвет узла
-    left - позиция узла по оси x
-    top - позиция узла по оси y
-    width - ширина узла
-    enabled - активен ли узел для выбора
-    function - функция узла
-    parameters - параметры узла
-    is_display_result - показывать ли результат узла (используется для узла отображения результата)
-    """
-    key: str                = "unknown"
-    name: str               = "Untitled"
-    icon: str               = None
-    group: str              = "Default"
-    color: str              = Color.random()
-    left: int               = 20
-    top: int                = 20
-    width: int              = 250
-    enabled: bool           = True
-    function: Callable      = lambda: {}
-    parameters: Dict | List = field(default_factory=list)
-    is_display_result: bool = False
-    
-    
-    def __post_init__(self):
-        for attr in ("key", "name", "group"):
-            value = getattr(self, attr)
-            if not isinstance(value, str) or not value:
-                try:
-                    setattr(self, attr, str(value))
-                except ValueError:
-                    raise ValueError(f"Недопустимый тип {attr}: {type(value)}")
 
 
 
 class Node(GestureDetector):
+    """
+    Карточка узла (нода)
+    """
+
     id_counter = count()
 
     HEADER_HEIGHT = 30
@@ -83,12 +43,17 @@ class Node(GestureDetector):
     HEADER_SHADOW_COLOR = colors.BLACK26
 
 
-    def __init__(self, page: Page, node_area: "NodeArea", scale = 1,
+    def __init__(
+        self,
+        page: Page,
+        node_area: "NodeArea",
+        scale = 1,
         config: NodeConfig = NodeConfig()
     ):
         super().__init__()
         self.page = page
         self.node_area = node_area
+        self.result_area = self.node_area.workplace.result_area
         self.config = config
 
         self.scale = scale
@@ -106,11 +71,11 @@ class Node(GestureDetector):
         self.calculate()
 
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Node: id: {self.id}, name: {self.name}"
     
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id)
 
 
@@ -118,7 +83,7 @@ class Node(GestureDetector):
         return isinstance(other, Node) and hash(self) == hash(other)
 
 
-    def setup_values(self):
+    def setup_values(self) -> None:
         """
         Устанавливает значения по умолчанию
         """
@@ -145,50 +110,49 @@ class Node(GestureDetector):
         self.function = self.config.function
         self.function_signature = self.get_signature_type_hints()
 
-        self.connects_from: Dict[str, "ParamInterface"] = {
+        self.connects_from: Dict[str, ParameterInterface] = {
             param.key: None
             for param in self.config.parameters
         }
-        self.connects_to: Dict[str, List["ParamInterface"]] = {
+        self.connects_to: Dict[str, List[ParameterInterface]] = {
             param.key: []
             for param in self.config.parameters
         }
-
         self.parameters_results_view_dict: Dict = {
             param.key: None
             for param in self.config.parameters
         }
 
 
-    def add_connect_to(self, param_from: ParamInterface, param_to: ParamInterface):
+    def add_connect_to(self, param_from: ParameterInterface, param_to: ParameterInterface) -> None:
         """
         Добавляет связь из текущего параметра в зависимый параметр
         """
         self.connects_to[param_from._key].append(param_to)
 
 
-    def add_connect_from(self, param_from: ParamInterface, param_to: ParamInterface):
+    def add_connect_from(self, param_from: ParameterInterface, param_to: ParameterInterface) -> None:
         """
         Добавляет связь из параметра источника в параметр текущего узла
         """
         self.connects_from[param_to._key] = param_from
 
 
-    def remove_connect_to(self, param_from: ParamInterface, param_to: ParamInterface):
+    def remove_connect_to(self, param_from: ParameterInterface, param_to: ParameterInterface) -> None:
         """
         Удаляет связь из текущего параметра в зависимый параметр
         """
         self.connects_to[param_from._key].remove(param_to)
 
 
-    def remove_connect_from(self, param_to: ParamInterface):
+    def remove_connect_from(self, param_to: ParameterInterface) -> None:
         """
         Удаляет связь из параметра источника в параметр текущего узла
         """
         self.connects_from[param_to._key] = None
 
 
-    def get_height(self):
+    def get_height(self) -> int:
         """
         Возвращает высоту карточки узла
         """
@@ -198,28 +162,28 @@ class Node(GestureDetector):
             return self.HEADER_HEIGHT + self.POINT_SIZE
             
     
-    def get_height_content(self):
+    def get_height_content(self) -> int:
         """
         Возвращает высоту контента карточки узла
         """
         return self.HEADER_HEIGHT + self.PARAM_PADDING * 2 + self.get_height_parameters()
 
 
-    def get_height_parameters(self):
+    def get_height_parameters(self) -> int:
         """
         Возвращает высоту параметров
         """
         return sum(param.height for param in self.parameters_dict.values())
     
 
-    def get_width_content(self):
+    def get_width_content(self) -> int:
         """
         Возвращает ширину контента карточки узла
         """
         return self.width - self.POINT_SIZE
     
 
-    def create_content(self):
+    def create_content(self) -> Stack:
         """
         Создает карточку узла
         """
@@ -255,35 +219,38 @@ class Node(GestureDetector):
         )
     
 
-    def create_header(self):
+    def create_header(self) -> Container:
         """
         Создает шапку узла
         """
-        self.ref_open_button = Ref[IconButton]()
+        self.ref_collapse_button = Ref[IconButton]()
+        collapse_button = IconButton(
+            ref = self.ref_collapse_button,
+            icon = icons.KEYBOARD_ARROW_DOWN,
+            icon_color = self.HEADER_ICON_COLOR,
+            on_click = self.toggle_parameters,
+            icon_size = 15,
+        )
+        name_text = Text(
+            value = f'{self.id}: {self.name}',
+            expand = True,
+            tooltip = self.name,
+            max_lines = 1,
+            text_align = TextAlign.CENTER,
+        )
+        delete_button = IconButton(
+            icon = icons.CLOSE,
+            icon_color = self.HEADER_ICON_COLOR,
+            on_click = self.delete,
+            icon_size = 15,
+        )
         return Container(
             height = self.HEADER_HEIGHT,
             content = Row(
                 controls = [
-                    IconButton(
-                        ref = self.ref_open_button,
-                        icon = icons.KEYBOARD_ARROW_DOWN,
-                        icon_color = self.HEADER_ICON_COLOR,
-                        on_click = self.toggle_parameters,
-                        icon_size = 15,
-                    ),
-                    Text(
-                        value = f'{self.id}: {self.name}',
-                        expand = True,
-                        tooltip = self.name,
-                        max_lines = 1,
-                        text_align = TextAlign.CENTER,
-                    ),
-                    IconButton(
-                        icon = icons.CLOSE,
-                        icon_color = self.HEADER_ICON_COLOR,
-                        on_click = self.delete,
-                        icon_size = 15,
-                    )
+                    collapse_button,
+                    name_text,
+                    delete_button
                 ],
                 alignment = MainAxisAlignment.SPACE_BETWEEN,
             ),
@@ -301,13 +268,13 @@ class Node(GestureDetector):
         )
 
 
-    def toggle_parameters(self, e):
+    def toggle_parameters(self, e) -> None:
         """
         Открывает/закрывает параметры узла
         """
         self.is_open = not self.is_open
         self.parameters.visible = self.is_open
-        self.ref_open_button.current.icon = (
+        self.ref_collapse_button.current.icon = (
             icons.KEYBOARD_ARROW_DOWN
             if self.is_open
             else icons.KEYBOARD_ARROW_RIGHT
@@ -324,18 +291,18 @@ class Node(GestureDetector):
                 point.top, point.left = point.close_top, point.close_left
         self.height = self.get_height()
 
-        self.node_area.update_connects_lines()
+        self.node_area.canvas_connections.update_connects_lines()
         self.content.update()
     
 
-    def delete(self, e):
+    def delete(self, e) -> None:
         """
         Удаляет узел
         """
         self.node_area.delete_node(self)
     
 
-    def create_parameters(self):
+    def create_parameters(self) -> Container:
         """
         Создает параметры узла
         """
@@ -362,11 +329,10 @@ class Node(GestureDetector):
         }
     
 
-    def set_connect_points_coordinates(self):
+    def set_connect_points_coordinates(self) -> None:
         """
         Устанавливает координаты точек связи
         """
-        
         out_value_count = len([
             param for param in self.config.parameters
             if param.connect_type == ParameterConnectType.OUT and param.has_connect_point
@@ -418,11 +384,10 @@ class Node(GestureDetector):
                     close_top = close_top,
                     close_left = close_left
                 )
-
             top += param.height
     
 
-    def create_contact_points_list(self):
+    def create_contact_points_list(self) -> list:
         """
         Создает точки контакта
         """
@@ -440,7 +405,7 @@ class Node(GestureDetector):
         angle_start = 0,
         angle_end = 360,
         point_idx = None
-    ):
+    ) -> list:
         """
         Возвращает координаты точек контакта с окружностью
         (0 градусов справа на оси X, по часовой)
@@ -465,7 +430,7 @@ class Node(GestureDetector):
         return points if point_idx is None else points[point_idx]
     
 
-    def on_drag_start(self, e: DragStartEvent):
+    def on_drag_start(self, e: DragStartEvent) -> None:
         """
         Обработка начала перемещения узла
         """
@@ -476,7 +441,7 @@ class Node(GestureDetector):
             self.set_selection_value(True)
     
 
-    def on_drag(self, e: DragUpdateEvent):
+    def on_drag(self, e: DragUpdateEvent) -> None:
         """
         Обработка перемещения узла
         """
@@ -484,7 +449,7 @@ class Node(GestureDetector):
             self.node_area.drag_selection(top_delta = e.delta_y, left_delta = e.delta_x)
 
 
-    def drag_node(self, left_delta = 0, top_delta = 0):
+    def drag_node(self, left_delta = 0, top_delta = 0) -> None:
         """
         Переместить узел
         """
@@ -492,7 +457,7 @@ class Node(GestureDetector):
         self.left = max(0, self.left + left_delta * self.scale)
 
 
-    def on_tap_select(self, e: TapEvent):
+    def on_tap_select(self, e: TapEvent) -> None:
         """
         Обработка нажатия на узел
         """
@@ -504,7 +469,7 @@ class Node(GestureDetector):
             
 
 
-    def set_selection_value(self, is_selected: bool):
+    def set_selection_value(self, is_selected: bool) -> None:
         """
         Выделить узел
         """
@@ -515,7 +480,7 @@ class Node(GestureDetector):
         self.update()
 
 
-    def toggle_selection(self, is_update = True):
+    def toggle_selection(self, is_update = True) -> None:
         """
         Переключает выделение узла
         """
@@ -525,7 +490,7 @@ class Node(GestureDetector):
             self.update()
 
 
-    def set_selection_style(self):
+    def set_selection_style(self) -> None:
         """
         Включает выделение узла
         """
@@ -540,7 +505,7 @@ class Node(GestureDetector):
             self.node_area.remove_selection_node(self)
 
 
-    def calculate(self, is_recalculate_dependent_nodes = True):
+    def calculate(self, is_recalculate_dependent_nodes = True) -> None:
         '''
         Вычисляет значение функции
         '''
@@ -559,7 +524,7 @@ class Node(GestureDetector):
             self.display_result()
         
 
-    def set_result_to_out_parameters(self):
+    def set_result_to_out_parameters(self) -> None:
         '''
         Устанавливает значение выходного параметра
         '''
@@ -568,7 +533,7 @@ class Node(GestureDetector):
             self.parameters_dict[res_param].value = self.result[res_param]
 
 
-    def get_signature_type_hints(self):
+    def get_signature_type_hints(self) -> dict:
         '''
         Возвращает типы параметров функции
         '''
@@ -636,23 +601,24 @@ class Node(GestureDetector):
         return True
     
 
-    def display_result(self):
+    def display_result(self) -> None:
         '''
         Отображает значение выходного параметра
         '''
-        result_area = self.node_area.workplace.result_area
         for param_key, result in self.result.items():
             if param_key not in self.parameters_results_view_dict:
                 continue
 
-            result_control: NodeResultView = self.parameters_results_view_dict[param_key]
+            result_control: ResultView = self.parameters_results_view_dict[param_key]
             if result["label"] == "" and self.connects_from[param_key] is not None:
                 result["label"] = self.connects_from[param_key].node.name
+
             if result_control is None:
-                result_control = NodeResultView(self, result_area, result)
-                result_area.result_controls.insert(0, result_control)
+                result_control = ResultView(self, self.result_area, result)
+                self.result_area.add_node_results(result_control)
                 self.parameters_results_view_dict[param_key] = result_control
             else:
                 result_control.update_result(result)
                 
-        result_area.update()
+        self.result_area.update()
+        

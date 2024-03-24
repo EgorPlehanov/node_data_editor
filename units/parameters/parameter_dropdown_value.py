@@ -2,18 +2,27 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..node.node import Node
 
+from .parameter_typing import *
+
 from flet import *
-from dataclasses import dataclass, field
 from typing import List
+from dataclasses import dataclass, field
 from copy import deepcopy
 
-from .parameter_typing import *
-from ..node.node_connect_point import ParameterConnectType
+
 
 @dataclass
-class DropdownOptionItem:
+class DropdownOptionConfig:
+    """
+    Элемент выподающего списка
+    
+    key - ключ
+    text - значение
+    """
     key: str    = ''
     text: str   = 'Не задано'
+
+
 
 @dataclass
 class DropdownValueParamConfig(ParameterConfigInterface):
@@ -24,10 +33,11 @@ class DropdownValueParamConfig(ParameterConfigInterface):
     include_none - включать ли элемент "Не задано"
     options - список элементов выподающего списка
     """
+
     height: int = 30
     default_value: str = None
     include_none: bool = False
-    options: List[DropdownOptionItem] = field(default_factory=list)
+    options: List[DropdownOptionConfig] = field(default_factory=list)
 
     def __post_init__(self):
         super().__post_init__()
@@ -42,17 +52,24 @@ class DropdownValueParamConfig(ParameterConfigInterface):
 
 
 
-class DropdownValueParam(Container, ParamInterface):
+class DropdownValueParam(Container, ParameterInterface):
     '''
     Параметр с одним булевым значением
     '''
-    def __init__(self, node: 'Node', config: DropdownValueParamConfig = DropdownValueParamConfig()):
+    
+    def __init__(
+        self,
+        node: 'Node',
+        config: DropdownValueParamConfig = DropdownValueParamConfig()
+    ):
         self._type: ParameterType = ParameterType.BOOL_VALUE
         self._connect_type: ParameterConnectType = ParameterConnectType.IN
 
         self.node = node
         self._config: DropdownValueParamConfig = config
+
         super().__init__()
+        self.__post_init__()
         
         self.set_style()
         
@@ -64,20 +81,15 @@ class DropdownValueParam(Container, ParamInterface):
         if self._config.has_connect_point:
             self.connect_point = self._create_connect_point()
 
-        print(self.options)
-
-
 
     def set_style(self) -> None:
         """
         Устанавливает стиль параметра
         """
-        self.__post_init__()
-
         self.options = deepcopy(self._config.options)
         self.include_none = self._config.include_none
         if self.include_none:
-            self.options.insert(0, DropdownOptionItem(key = None, text = 'Не задано'))
+            self.options.insert(0, DropdownOptionConfig(key = None, text = 'Не задано'))
         elif self.value is None:
             self.value = self.options[0].key
 

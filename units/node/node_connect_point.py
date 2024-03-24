@@ -1,38 +1,22 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .node import Node
-    from ..parameters.parameter_typing import ParamInterface
+    from ..parameters import ParameterInterface
+
+from ..parameters import ParameterConnectType
+from .node_connection import NodeConnection
 
 from flet import *
-from enum import Enum
 from typing import Any, Union
-
-from .node_connection import NodeConnection
-    
-
-class ParameterConnectType(Enum):
-    '''
-    Типы подключения
-
-    IN - входной
-    OUT - выходной
-    '''
-    IN = 'in'
-    OUT = 'out'
-
-    def __str__(self):
-        return self.value
-    
-
-
-# @dataclass
-# class ConnectionConfig:
-#     from_parameter: Any = None
-#     to_parameter: Any = None
 
 
 
 class NodeConnectPoint(Container):
+    """
+    Класс для отрисовки точки контакта нод
+    Используется для подключения параметров
+    """
+
     POINT_BORDER_WIDTH = 1
 
     def __init__(
@@ -44,13 +28,14 @@ class NodeConnectPoint(Container):
         left: int = 0,
         close_top: int = 0,
         close_left: int = 0,
-        connect_type: ParameterConnectType = ParameterConnectType.OUT,
+        connect_type: "ParameterConnectType" = ParameterConnectType.OUT,
         color: str = colors.GREY_500,
         size: int = 12,
     ):
         super().__init__()
         self.node = node
-        self.parameter: "ParamInterface" = parameter
+        self.node_area_connections = self.node.node_area.canvas_connections
+        self.parameter: "ParameterInterface" = parameter
 
         self.node_id = self.node.id
         self.id = id
@@ -74,20 +59,20 @@ class NodeConnectPoint(Container):
         self.content: Union[DragTarget, Draggable] = self.create_content()
 
     
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (
             isinstance(other, NodeConnectPoint)
             and self.id == other.id
         )
     
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.id, self.node_id))
         
         
     def create_point(self) -> Container:
         """
-        Создает контакт
+        Создает точку контакта
         """
         return Container(
             on_long_press = lambda e: self.clear_connect(),
@@ -136,7 +121,7 @@ class NodeConnectPoint(Container):
         self.update()
     
 
-    def drag_leave(self, e: ControlEvent):
+    def drag_leave(self, e: ControlEvent) -> None:
         """
         Отменяент изменения drag_will_accept(), когда курсор убирают с цели
         """
@@ -150,7 +135,7 @@ class NodeConnectPoint(Container):
         )
 
 
-    def drag_accept(self, e: DragTargetAcceptEvent):
+    def drag_accept(self, e: DragTargetAcceptEvent) -> None:
         """
         Принимает контакт
         """
@@ -166,7 +151,7 @@ class NodeConnectPoint(Container):
             print("Неизвестный тип src_data")
 
 
-    def handle_node_connect_point_data(self, e: DragTargetAcceptEvent, src_data: "NodeConnectPoint"):
+    def handle_node_connect_point_data(self, e: DragTargetAcceptEvent, src_data: "NodeConnectPoint") -> None:
         """
         Обрабатывает данные от выходного параметра (NodeConnectPoint)
         """
@@ -179,7 +164,7 @@ class NodeConnectPoint(Container):
                     self.drag_leave(e)
 
                 else:
-                    from_param: "ParamInterface" = src_data.parameter
+                    from_param: "ParameterInterface" = src_data.parameter
                     self.current_connect.change_from_param(from_param)
                     self.current_point_color = self.current_connect.path_color
                     self.set_point_color(
@@ -189,16 +174,16 @@ class NodeConnectPoint(Container):
                     self.node.calculate()
                     
             else:
-                from_param: "ParamInterface" = src_data.parameter
+                from_param: "ParameterInterface" = src_data.parameter
                 connect = NodeConnection(
                     from_param = from_param,
                     to_param = self.parameter,
                 )
-                self.node.node_area.add_node_connect(connect)
+                self.node_area_connections.add_node_connect(connect)
                 self.set_current_connect(connect)
 
     
-    def handle_node_connection_data(self, e: DragTargetAcceptEvent, src_data: NodeConnection):
+    def handle_node_connection_data(self, e: DragTargetAcceptEvent, src_data: NodeConnection) -> None:
         """
         Обрабатывает данные от подключения к другому параметру (NodeConnection)
         """
@@ -207,9 +192,9 @@ class NodeConnectPoint(Container):
 
         else:
             if self.parameter.is_connected:
-                self.node.node_area.remove_node_connect(self.current_connect)
+                self.node_area_connections.remove_node_connect(self.current_connect)
 
-                cur_to_point: "NodeConnectPoint" = src_data.to_point
+                cur_to_point: NodeConnectPoint = src_data.to_point
                 cur_to_point.clear_point_on_reconnect(
                     is_recalculate = self.current_connect.to_node != src_data.to_node
                 )
@@ -218,14 +203,14 @@ class NodeConnectPoint(Container):
                 self.set_current_connect(src_data)
 
             else:
-                cur_to_point: "NodeConnectPoint" = src_data.to_point
+                cur_to_point: NodeConnectPoint = src_data.to_point
                 cur_to_point.clear_point_on_reconnect()
 
                 src_data.change_to_param(self.parameter)
                 self.set_current_connect(src_data)
 
 
-    def set_current_connect(self, connect: NodeConnection):
+    def set_current_connect(self, connect: NodeConnection) -> None:
         """
         Устанавливает текущее соединение
         """
@@ -235,7 +220,7 @@ class NodeConnectPoint(Container):
         self.parameter.set_connect_state(True)
 
 
-    def clear_point_on_reconnect(self, is_recalculate: bool = True):
+    def clear_point_on_reconnect(self, is_recalculate: bool = True) -> None:
         """
         Очищает цвет контакта при переподключении из текущего параметра в другой
         """
@@ -249,7 +234,7 @@ class NodeConnectPoint(Container):
         )
 
 
-    def make_draggable_on_connect(self, connect: NodeConnection):
+    def make_draggable_on_connect(self, connect: NodeConnection) -> None:
         """
         Переводит контакт в состояние перетаскивания
         """
@@ -281,18 +266,18 @@ class NodeConnectPoint(Container):
             self.update()
 
 
-    def clear_connect(self):
+    def clear_connect(self) -> None:
         """
         Удаляет соединеие
         """
         if self.parameter.is_connected:
-            self.node.node_area.remove_node_connect(self.current_connect)
+            self.node_area_connections.remove_node_connect(self.current_connect)
             self.clear_point_on_reconnect()
 
 
     
 
-    def on_point_drag(self, e: DragUpdateEvent):
+    def on_point_drag(self, e: DragUpdateEvent) -> None:
         """
         Обработка перемещения контакта
         """

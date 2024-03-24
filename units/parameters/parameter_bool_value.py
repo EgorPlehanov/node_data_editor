@@ -2,11 +2,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..node.node import Node
 
+from .parameter_typing import *
+
 from flet import *
 from dataclasses import dataclass
-
-from .parameter_typing import *
-from ..node.node_connect_point import ParameterConnectType
 
 
 
@@ -18,6 +17,7 @@ class BoolValueParamConfig(ParameterConfigInterface):
     default_value - значение параметра (по умолчанию)
     is_tristate - третий статус (True, False, None)
     """
+    
     default_value: bool = False
     is_tristate: bool = False
 
@@ -34,17 +34,24 @@ class BoolValueParamConfig(ParameterConfigInterface):
 
 
 
-class BoolValueParam(Container, ParamInterface):
+class BoolValueParam(Container, ParameterInterface):
     '''
     Параметр с одним булевым значением
     '''
-    def __init__(self, node: 'Node', config: BoolValueParamConfig = BoolValueParamConfig()):
+
+    def __init__(
+        self,
+        node: 'Node',
+        config: BoolValueParamConfig = BoolValueParamConfig()
+    ):
         self._type: ParameterType = ParameterType.BOOL_VALUE
         self._connect_type: ParameterConnectType = ParameterConnectType.IN
 
         self.node = node
         self._config: BoolValueParamConfig = config
+
         super().__init__()
+        self.__post_init__()
         
         self.set_style()
         
@@ -62,8 +69,6 @@ class BoolValueParam(Container, ParamInterface):
         """
         Устанавливает стиль параметра
         """
-        self.__post_init__()
-
         self.is_tristate = self._config.is_tristate
         
         self.margin = margin.only(left = 3, right = 3)
