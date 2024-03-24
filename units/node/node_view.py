@@ -15,6 +15,9 @@ import math
 
 
 class NodeView(Stack):
+    """
+    Карточка узла визуальное представление
+    """
 
     HEADER_HEIGHT = 30
     BORDER_RADIUS = HEADER_HEIGHT // 2

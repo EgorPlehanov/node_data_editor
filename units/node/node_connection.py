@@ -186,9 +186,6 @@ class NodeConnection:
         """
         Изменяет источник параметра
         """
-        self.from_node.remove_connect_to(self.from_param, self.to_param)
-        self.to_node.remove_connect_from(self.to_param)
-
         self.from_param: "ParameterInterface" = from_param
         self.from_param_id: int = self.from_param.id
         self.from_node: "Node" = self.from_param.node
@@ -196,9 +193,6 @@ class NodeConnection:
         self.from_point: "ParameterConnectPoint" = self.from_param.connect_point
         self.path_color: str = self.from_point.point_color
         self.path_paint.color = self.path_color
-
-        self.from_node.add_connect_to(self.from_param, self.to_param)
-        self.to_node.add_connect_from(self.from_param, self.to_param)
 
         self.update_connect_path_from_param()
         self.connect_path.update()
@@ -208,17 +202,11 @@ class NodeConnection:
         '''
         Изменяет принимающий параметр
         '''
-        self.from_node.remove_connect_to(self.from_param, self.to_param)
-        self.to_node.remove_connect_from(self.to_param)
-
         self.to_param: "ParameterInterface" = to_param
         self.to_param_id: int = self.to_param.id
         self.to_node: "Node" = self.to_param.node
         self.to_node_id: int = self.to_node.id
         self.to_point: "ParameterConnectPoint" = self.to_param.connect_point
-
-        self.from_node.add_connect_to(self.from_param, self.to_param)
-        self.to_node.add_connect_from(self.from_param, self.to_param)
 
         self.update_connect_path_to_param()
         self.connect_path.update()

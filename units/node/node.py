@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..node_area.node_area import NodeArea
     from ..parameters import ParameterInterface
+    from .node_connection import NodeConnection
 
 from .node_config import NodeConfig
 from ..calculation_functions import NodeResult
@@ -88,46 +89,10 @@ class Node(GestureDetector):
         self.function = self.config.function
         self.function_signature = self.get_signature_type_hints()
 
-        self.connects_from: Dict[str, "ParameterInterface"] = {
-            param.key: None
-            for param in self.config.parameters
-        }
-        self.connects_to: Dict[str, List["ParameterInterface"]] = {
-            param.key: []
-            for param in self.config.parameters
-        }
         self.parameters_results_view_dict: Dict = {
             param.key: None
             for param in self.config.parameters
         }
-
-
-    def add_connect_to(self, param_from: "ParameterInterface", param_to: "ParameterInterface") -> None:
-        """
-        Добавляет связь из текущего параметра в зависимый параметр
-        """
-        self.connects_to[param_from._key].append(param_to)
-
-
-    def add_connect_from(self, param_from: "ParameterInterface", param_to: "ParameterInterface") -> None:
-        """
-        Добавляет связь из параметра источника в параметр текущего узла
-        """
-        self.connects_from[param_to._key] = param_from
-
-
-    def remove_connect_to(self, param_from: "ParameterInterface", param_to: "ParameterInterface") -> None:
-        """
-        Удаляет связь из текущего параметра в зависимый параметр
-        """
-        self.connects_to[param_from._key].remove(param_to)
-
-
-    def remove_connect_from(self, param_to: "ParameterInterface") -> None:
-        """
-        Удаляет связь из параметра источника в параметр текущего узла
-        """
-        self.connects_from[param_to._key] = None
 
 
     def delete(self, e) -> None:
@@ -240,22 +205,21 @@ class Node(GestureDetector):
 
     def _get_valid_parameters(self) -> dict:
         '''Возвращает текущие значения параметров функции с учетом сигнатуры функции'''
-        valid_parameters = {
-            name: self.get_parameter_value(
-                self.parameters_dict[name].value
-                if not self.parameters_dict[name].is_connected
-                else self.connects_from[name].value
-            )
-            for name in self.function_signature
-            if self.is_valid_parameter(
-                name,
-                self.get_parameter_value(
-                    self.parameters_dict[name].value
-                    if not self.parameters_dict[name].is_connected
-                    else self.connects_from[name].value
-                )
-            )
-        }
+        valid_parameters = {}
+        for name in self.function_signature:
+            value = self.parameters_dict[name].value
+
+            if self.parameters_dict[name].is_connected:
+                connect: "NodeConnection" = self.parameters_dict[name].connect_point.current_connect
+                
+                if connect is None:
+                    value = self.parameters_dict[name].value
+                else:
+                    value = connect.from_param.value
+
+            if self.is_valid_parameter(name, value):
+                valid_parameters[name] = self.get_parameter_value(value)
+        
         if len(valid_parameters) != len(self.function_signature):
             raise ValueError(
                 "Количество параметров не совпадает, "
@@ -299,10 +263,13 @@ class Node(GestureDetector):
         for param_key, result in self.result.items():
             if param_key not in self.parameters_results_view_dict:
                 continue
-
+            
             result_control: ResultView = self.parameters_results_view_dict[param_key]
-            if result["label"] == "" and self.connects_from[param_key] is not None:
-                result["label"] = self.connects_from[param_key].node.name
+
+            connect: "NodeConnection" = self.parameters_dict[param_key].connect_point.current_connect
+
+            if result["label"] == "" and connect is not None:
+                result["label"] = connect.from_node.name
 
             if result_control is None:
                 result_control = ResultView(self, self.result_area, result)
