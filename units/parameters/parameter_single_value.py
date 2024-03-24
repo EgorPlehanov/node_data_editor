@@ -7,6 +7,7 @@ from ..data_types import ParameterConnectType
 
 from flet import *
 from dataclasses import dataclass
+import keyboard
 
 
 
@@ -266,9 +267,20 @@ class SingleValueParam(Container, ParameterInterface):
         При изменении значения в поле ввода
         """
         value_text: Text = self.ref_main_control_value.current
-        value = float(value_text.value) + round(e.delta_x) * self.value_step
+        step = self.value_step
+        cur_value = float(value_text.value)
+        round_num = max(
+            len(str(step).lstrip('0').replace('.', '')),
+            len(str(cur_value).lstrip('0').replace('.', ''))
+        )
+        if keyboard.is_pressed('shift'):
+            round_num += 3
+            step = round(self.value_step / 1000, round_num)
+
+        value = round(cur_value + round(e.delta_x) * step, round_num)
         value_text.value =  self.min_max_check(value)
         value_text.update()
+
 
     def drag_value_update_start(self, e: DragUpdateEvent) -> None:
         """

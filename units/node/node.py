@@ -106,7 +106,7 @@ class Node(GestureDetector):
         """
         Обработка начала перемещения узла
         """
-        if keyboard.is_pressed('shift'):
+        if keyboard.is_pressed('ctrl'):
             self.toggle_selection()
         elif not self.is_selected:
             self.node_area.clear_selection()
@@ -117,7 +117,7 @@ class Node(GestureDetector):
         """
         Обработка перемещения узла
         """
-        if not keyboard.is_pressed('shift'):
+        if not keyboard.is_pressed('ctrl'):
             self.node_area.drag_selection(top_delta = e.delta_y, left_delta = e.delta_x)
 
 
@@ -133,7 +133,7 @@ class Node(GestureDetector):
         """
         Обработка нажатия на узел
         """
-        if keyboard.is_pressed('shift'):
+        if keyboard.is_pressed('ctrl'):
             self.toggle_selection()
         else:
             self.node_area.clear_selection()

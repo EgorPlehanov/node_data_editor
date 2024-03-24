@@ -4,7 +4,7 @@ if TYPE_CHECKING:
 
 from flet import *
 import flet.canvas as cv
-
+import keyboard
 
 
 class NodeAreaSelectionBox(cv.Canvas):
@@ -67,6 +67,8 @@ class NodeAreaSelectionBox(cv.Canvas):
         '''
         Начать выделение
         '''
+        if keyboard.is_pressed('shift'):
+            return
         self.selection_box.x = e.local_x
         self.selection_box.y = e.local_y
         self.selection_box.width = 0
@@ -90,6 +92,9 @@ class NodeAreaSelectionBox(cv.Canvas):
         '''
         Переместить выделение
         '''
+        if keyboard.is_pressed('shift'):
+            self.node_area.drag_all(e)
+            return
         self.selection_box.width = e.local_x - self.selection_box.x
         self.selection_box.height = e.local_y - self.selection_box.y
 
@@ -108,6 +113,8 @@ class NodeAreaSelectionBox(cv.Canvas):
         '''
         Завершить выделение
         '''
+        if keyboard.is_pressed('shift'):
+            return
         self.selection_box.visible = False
         self.selection_box_stroke.visible = False
         self.node_area.select_all_in_selection_box(self.selection_box)
