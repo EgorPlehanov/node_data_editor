@@ -4,16 +4,14 @@ if TYPE_CHECKING:
     from ..parameters import ParameterInterface
 
 from .node_config import NodeConfig
-from ..parameters import type_to_param
 from ..calculation_functions import NodeResult
 from ..result_area import ResultView
-from ..data_types import ParameterConnectType
+from .node_view import NodeView
 
 from flet import *
 from itertools import count
 from typing import List, Dict, Any, get_type_hints
 from inspect import signature
-import math
 import keyboard
 
 
@@ -24,26 +22,6 @@ class Node(GestureDetector):
     """
 
     id_counter = count()
-
-    HEADER_HEIGHT = 30
-    BORDER_RADIUS = HEADER_HEIGHT // 2
-    BORDER_WIDTH = 1
-
-    POINT_SIZE = 12
-    POINT_BORDER_WIDTH = 1
-
-    CONTENT_MARGIN = POINT_SIZE // 2
-    PARAM_PADDING = 5
-
-    NODE_BGCOLOR = colors.with_opacity(0.90, colors.GREY_900)
-    NODE_BORDER_COLOR = colors.BLACK87
-    NODE_SELECT_BGCOLOR = colors.GREY_800
-    NODE_SELECT_BORDER_COLOR = colors.DEEP_ORANGE_ACCENT_400
-    NODE_SHADOW_COLOR = colors.BLACK38
-
-    HEADER_ICON_COLOR = colors.WHITE
-    HEADER_SHADOW_COLOR = colors.BLACK26
-
 
     def __init__(
         self,
@@ -62,13 +40,13 @@ class Node(GestureDetector):
 
         self.setup_values()
         
-        self.header = self.create_header()
-        self.parameters = self.create_parameters()
-        
-        self.height = self.get_height()
-
-        self.connect_points = self.create_contact_points_list()
-        self.content = self.create_content()
+        self.node_view: NodeView = NodeView(
+            node = self,
+            config = self.config
+        )
+        self.content = self.node_view
+        self.parameters_dict = self.node_view.parameters_dict
+        self.height = self.content.get_height()
 
         self.calculate()
 
@@ -106,8 +84,6 @@ class Node(GestureDetector):
         self.top = self.config.top
 
         self.width = self.config.width
-
-        self.header_color = self.config.color
 
         self.function = self.config.function
         self.function_signature = self.get_signature_type_hints()
@@ -154,282 +130,11 @@ class Node(GestureDetector):
         self.connects_from[param_to._key] = None
 
 
-    def get_height(self) -> int:
-        """
-        Возвращает высоту карточки узла
-        """
-        if self.is_open:
-            return self.get_height_content() + self.POINT_SIZE * 1.5
-        else:
-            return self.HEADER_HEIGHT + self.POINT_SIZE
-            
-    
-    def get_height_content(self) -> int:
-        """
-        Возвращает высоту контента карточки узла
-        """
-        return self.HEADER_HEIGHT + self.PARAM_PADDING * 2 + self.get_height_parameters()
-
-
-    def get_height_parameters(self) -> int:
-        """
-        Возвращает высоту параметров
-        """
-        return sum(param.height for param in self.parameters_dict.values())
-    
-
-    def get_width_content(self) -> int:
-        """
-        Возвращает ширину контента карточки узла
-        """
-        return self.width - self.POINT_SIZE
-    
-
-    def create_content(self) -> Stack:
-        """
-        Создает карточку узла
-        """
-        self.ref_content_conteiner = Ref[Container]()
-        return Stack(
-            [
-                Container(
-                    ref = self.ref_content_conteiner,
-                    content = Column(
-                        controls = [
-                            self.header,
-                            self.parameters
-                        ],
-                        spacing = 0,
-                    ),
-                    width = self.get_width_content(),
-                    left = self.CONTENT_MARGIN,
-                    top = self.CONTENT_MARGIN,
-                    visible = self.is_open,
-                    bgcolor = self.NODE_BGCOLOR,
-                    border_radius = border_radius.all(self.BORDER_RADIUS),
-                    border = border.all(self.BORDER_WIDTH, self.NODE_BORDER_COLOR),
-                    shadow = BoxShadow(
-                        spread_radius = 0,
-                        blur_radius = 5,
-                        color = self.NODE_SHADOW_COLOR,
-                        offset = Offset(0, 5),
-                        blur_style = ShadowBlurStyle.NORMAL,
-                    )
-                ),
-                *self.connect_points
-            ], clip_behavior=ClipBehavior.NONE
-        )
-    
-
-    def create_header(self) -> Container:
-        """
-        Создает шапку узла
-        """
-        self.ref_collapse_button = Ref[IconButton]()
-        collapse_button = IconButton(
-            ref = self.ref_collapse_button,
-            icon = icons.KEYBOARD_ARROW_DOWN,
-            icon_color = self.HEADER_ICON_COLOR,
-            on_click = self.toggle_parameters,
-            icon_size = 15,
-        )
-        name_text = Text(
-            value = f'{self.id}: {self.name}',
-            expand = True,
-            tooltip = self.name,
-            max_lines = 1,
-            text_align = TextAlign.CENTER,
-        )
-        delete_button = IconButton(
-            icon = icons.CLOSE,
-            icon_color = self.HEADER_ICON_COLOR,
-            on_click = self.delete,
-            icon_size = 15,
-        )
-        return Container(
-            height = self.HEADER_HEIGHT,
-            content = Row(
-                controls = [
-                    collapse_button,
-                    name_text,
-                    delete_button
-                ],
-                alignment = MainAxisAlignment.SPACE_BETWEEN,
-            ),
-            bgcolor = colors.with_opacity(0.5, self.header_color),
-            border_radius = border_radius.only(
-                top_left = self.BORDER_RADIUS, top_right = self.BORDER_RADIUS
-            ),
-            shadow = BoxShadow(
-                spread_radius = 0,
-                blur_radius = 5,
-                color = self.HEADER_SHADOW_COLOR,
-                offset = Offset(0, 3),
-                blur_style = ShadowBlurStyle.NORMAL,
-            ),
-        )
-
-
-    def toggle_parameters(self, e) -> None:
-        """
-        Открывает/закрывает параметры узла
-        """
-        self.is_open = not self.is_open
-        self.parameters.visible = self.is_open
-        self.ref_collapse_button.current.icon = (
-            icons.KEYBOARD_ARROW_DOWN
-            if self.is_open
-            else icons.KEYBOARD_ARROW_RIGHT
-        )
-        self.header.border_radius = (
-            border_radius.only(top_left = self.BORDER_RADIUS, top_right = self.BORDER_RADIUS)
-            if self.is_open
-            else border_radius.all(self.BORDER_RADIUS)
-        )
-        for point in self.connect_points:
-            if self.is_open:
-                point.top, point.left = point.open_top, point.open_left
-            else:
-                point.top, point.left = point.close_top, point.close_left
-        self.height = self.get_height()
-
-        self.node_area.canvas_connections.update_connects_lines()
-        self.content.update()
-    
-
     def delete(self, e) -> None:
         """
         Удаляет узел
         """
         self.node_area.delete_node(self)
-    
-
-    def create_parameters(self) -> Container:
-        """
-        Создает параметры узла
-        """
-        self.parameters_dict: Dict[str, "ParameterInterface"] = self.create_parameters_dict(self.config.parameters)
-        self.set_connect_points_coordinates()
-
-        return Container(
-            width = self.width,
-            content = Column(
-                controls = self.parameters_dict.values(),
-                spacing = 0,
-            ),
-            padding = padding.all(self.PARAM_PADDING),
-        )
-    
-
-    def create_parameters_dict(self, config_list: list) -> Dict:
-        '''
-        Создает список параметров
-        '''
-        return {
-            config.key: type_to_param[config.type](node=self, config=config)
-            for config in config_list
-        }
-    
-
-    def set_connect_points_coordinates(self) -> None:
-        """
-        Устанавливает координаты точек связи
-        """
-        out_value_count = len([
-            param for param in self.config.parameters
-            if param.connect_type == ParameterConnectType.OUT and param.has_connect_point
-        ])
-        in_param_count = len([
-            param for param in self.config.parameters
-            if param.connect_type == ParameterConnectType.IN and param.has_connect_point
-        ])
-
-        out_center_x = self.width - self.POINT_SIZE // 2 - self.BORDER_RADIUS
-        in_center_x = self.POINT_SIZE // 2 + self.BORDER_RADIUS
-        center_y = self.HEADER_HEIGHT // 2
-
-        out_close_coord = self.get_points_close_coordinates(
-            center_x = out_center_x,
-            center_y = center_y,
-            radius = self.BORDER_RADIUS,
-            num_objects = out_value_count,
-            angle_start = -90,
-            angle_end = 90,
-        )
-        in_close_coord = self.get_points_close_coordinates(
-            center_x = in_center_x,
-            center_y = center_y,
-            radius = self.BORDER_RADIUS,
-            num_objects = in_param_count,
-            angle_start = -90,
-            angle_end = -270,
-        )
-
-        top = self.HEADER_HEIGHT + self.POINT_SIZE // 2 + self.PARAM_PADDING
-        left_out = self.width - self.POINT_SIZE
-
-        for param in self.parameters_dict.values():
-            if param.has_connect_point:
-                if param._connect_type == ParameterConnectType.OUT:
-                    left = left_out
-                    cords = out_close_coord.pop(0)
-                else:
-                    left = 0
-                    cords = in_close_coord.pop(0)
-
-                close_top = cords[1]
-                close_left = cords[0] - self.POINT_SIZE // 2
-
-                param.set_connect_point_coordinates(
-                    open_top = top + self.POINT_SIZE // 2,
-                    open_left = left,
-                    close_top = close_top,
-                    close_left = close_left
-                )
-            top += param.height
-    
-
-    def create_contact_points_list(self) -> list:
-        """
-        Создает точки контакта
-        """
-        return [
-            param.connect_point for param in self.parameters_dict.values()
-            if param.has_connect_point or param.connect_point is not None
-        ]
-    
-
-    def get_points_close_coordinates(
-        self,
-        center_x, center_y,
-        radius,
-        num_objects,
-        angle_start = 0,
-        angle_end = 360,
-        point_idx = None
-    ) -> list:
-        """
-        Возвращает координаты точек контакта с окружностью
-        (0 градусов справа на оси X, по часовой)
-
-        center_x, center_y - координаты центра окружности
-        radius - радиус окружности
-        num_objects - количество точек
-        angle_start - начальный угол
-        angle_end - конечный угол
-        point_idx - индекс точки, если None, то возвращает координаты всех точек
-        """
-        if num_objects < 1:
-            return []
-        step_angle = (angle_end - angle_start) / num_objects
-        points = [
-            (
-                center_x + radius * math.cos(math.radians(angle_start + idx * step_angle + step_angle / 2)),
-                center_y + radius * math.sin(math.radians(angle_start + idx * step_angle + step_angle / 2))
-            )
-            for idx in range(num_objects)
-        ]
-        return points if point_idx is None else points[point_idx]
     
 
     def on_drag_start(self, e: DragStartEvent) -> None:
@@ -468,7 +173,6 @@ class Node(GestureDetector):
         else:
             self.node_area.clear_selection()
             self.set_selection_value(True)
-            
 
 
     def set_selection_value(self, is_selected: bool) -> None:
@@ -478,7 +182,7 @@ class Node(GestureDetector):
         if self.is_selected == is_selected:
             return
         self.is_selected = is_selected
-        self.set_selection_style()
+        self.node_view.set_selection_style()
         self.update()
 
 
@@ -487,24 +191,9 @@ class Node(GestureDetector):
         Переключает выделение узла
         """
         self.is_selected = not self.is_selected
-        self.set_selection_style()
+        self.node_view.set_selection_style()
         if is_update:
             self.update()
-
-
-    def set_selection_style(self) -> None:
-        """
-        Включает выделение узла
-        """
-        conteiner: Container = self.ref_content_conteiner.current
-        if self.is_selected:
-            conteiner.bgcolor = self.NODE_SELECT_BGCOLOR
-            conteiner.border = border.all(self.BORDER_WIDTH, self.NODE_SELECT_BORDER_COLOR)
-            self.node_area.add_selection_node(self)
-        else:
-            conteiner.bgcolor = self.NODE_BGCOLOR
-            conteiner.border = border.all(self.BORDER_WIDTH, self.NODE_BORDER_COLOR)
-            self.node_area.remove_selection_node(self)
 
 
     def calculate(self, is_recalculate_dependent_nodes = True) -> None:

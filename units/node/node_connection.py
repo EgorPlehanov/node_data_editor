@@ -122,8 +122,8 @@ class NodeConnection:
         left_center = node.width // 2
         top_center = node.height // 2
 
-        point_left = point.left + node.POINT_SIZE // 2 - left_center
-        point_top = point.top + node.POINT_SIZE // 2 - top_center
+        point_left = point.left + node.node_view.POINT_SIZE // 2 - left_center
+        point_top = point.top + node.node_view.POINT_SIZE // 2 - top_center
 
         point_left_scl = point_left * self.node_area.current_scale + left_center
         point_top_scl = point_top * self.node_area.current_scale + top_center
