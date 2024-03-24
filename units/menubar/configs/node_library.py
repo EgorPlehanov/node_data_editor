@@ -1,7 +1,7 @@
 from .folder import Folder
 from ...node import NodeConfig
 from ...parameters import *
-from ...calculate_function import *
+from ...calculation_functions import *
 
 from typing import List
 from flet import icons, colors

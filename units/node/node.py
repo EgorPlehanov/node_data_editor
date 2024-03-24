@@ -5,7 +5,7 @@ if TYPE_CHECKING:
 
 from .node_config import NodeConfig
 from ..parameters import type_to_param
-from ..calculate_function import NodeResult
+from ..calculation_functions import NodeResult
 from ..result_area import ResultView
 from ..data_types import ParameterConnectType
 
@@ -308,7 +308,7 @@ class Node(GestureDetector):
         """
         Создает параметры узла
         """
-        self.parameters_dict: Dict = self.create_parameters_dict(self.config.parameters)
+        self.parameters_dict: Dict[str, "ParameterInterface"] = self.create_parameters_dict(self.config.parameters)
         self.set_connect_points_coordinates()
 
         return Container(

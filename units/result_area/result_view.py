@@ -3,7 +3,7 @@ if TYPE_CHECKING:
     from ..node.node import Node
     from .result_area import ResultArea
 
-from ..calculate_function import ResultType, NodeResult
+from ..calculation_functions import ResultType, NodeResult
 
 from flet import *
 from flet.matplotlib_chart import MatplotlibChart

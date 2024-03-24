@@ -1,3 +1,7 @@
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .parameter_type import ParameterType
+
 from dataclasses import dataclass
 from typing import Any
 from flet import colors
@@ -23,7 +27,18 @@ class ParameterConfigInterface:
     connect_point_color: str = colors.GREY_500
     tooltip: str = None
 
+
     def __post_init__(self):
         if self.key == 'unknown':
             self.key = self.name.lower().replace(" ", "_")
+        
+
+    @property
+    def type(self) -> "ParameterType":
+        return None
+    
+
+    @property
+    def connect_type(self) -> "ParameterType":
+        return None
     

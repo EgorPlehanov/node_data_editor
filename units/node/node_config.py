@@ -1,3 +1,7 @@
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..parameters.parameter_typing import ParameterConfigInterface
+
 from ..data_types import Color
 
 from dataclasses import dataclass, field
@@ -34,7 +38,7 @@ class NodeConfig:
     width: int              = 250
     enabled: bool           = True
     function: Callable      = lambda: {}
-    parameters: Dict | List = field(default_factory=list)
+    parameters: List["ParameterConfigInterface"] = field(default_factory=list)
     is_display_result: bool = False
     
     
@@ -46,4 +50,3 @@ class NodeConfig:
                     setattr(self, attr, str(value))
                 except ValueError:
                     raise ValueError(f"Недопустимый тип {attr}: {type(value)}")
-    

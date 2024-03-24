@@ -1,4 +1,4 @@
-from ..calculate_function_typing import *
+from ..calculation_functions_typing import *
 
 from typing import Any
 from datetime import datetime

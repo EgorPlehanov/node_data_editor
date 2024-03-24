@@ -1,4 +1,4 @@
-from .calculate_function_typing import NodeResult, ResultType
+from .calculation_functions_typing import NodeResult, ResultType
 
 from .math import *
 from .output import *
