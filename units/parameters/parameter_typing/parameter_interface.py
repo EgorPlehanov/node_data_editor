@@ -101,11 +101,10 @@ class ParameterInterface(ABC):
         close_top: int,
         close_left: int
     ) -> None:
-        connect_point = self.connect_point
-        if connect_point is not None:
-            connect_point.top = open_top
-            connect_point.left = open_left
-            connect_point.open_top = open_top
-            connect_point.open_left = open_left
-            connect_point.close_top = close_top
-            connect_point.close_left = close_left
+        if self.connect_point is not None:
+            self.connect_point.top = open_top
+            self.connect_point.left = open_left
+            self.connect_point.open_top = open_top
+            self.connect_point.open_left = open_left
+            self.connect_point.close_top = close_top
+            self.connect_point.close_left = close_left
