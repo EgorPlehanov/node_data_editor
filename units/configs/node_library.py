@@ -598,19 +598,19 @@ class NodeLibrary:
                             parameters = [
                                 OutParamConfig(
                                     key="original_spectrum", name="Original spectrum",
-                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                    connect_point_color=colors.PINK_ACCENT_400
                                 ),
                                 OutParamConfig(
                                     key="derivative_spectrum", name="Derivative spectrum",
-                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                    connect_point_color=colors.PINK_ACCENT_400
                                 ),
                                 OutParamConfig(
                                     key="autocorrelation", name="Autocorrelation",
-                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                    connect_point_color=colors.PINK_ACCENT_400
                                 ),
                                 OutParamConfig(
                                     key="crosscorrelation", name="Crosscorrelation",
-                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                    connect_point_color=colors.PINK_ACCENT_400
                                 ),
 
                                 FilePickerParamConfig(key="image", name="Фото"),
@@ -628,6 +628,138 @@ class NodeLibrary:
                     icon = icons.LABEL,
                     color = colors.PINK,
                     obj_list = [
+                        NodeConfig(
+                            key = "add_random_noise",
+                            name = "Добавить случайный шум",
+                            icon = icons.BLUR_ON,
+                            color = colors.PINK,
+                            function = add_random_noise,
+                            parameters = [
+                                OutParamConfig(
+                                    key="noisy_image", name="Noisy image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+                                OutParamConfig(
+                                    key="noise", name="Noise",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                SingleValueParamConfig(
+                                    key="mean", name="Mean",
+                                    default_value = 0
+                                ),
+                                SingleValueParamConfig(
+                                    key="stddev", name="Stddev",
+                                    default_value = 10, min_value = 0  
+                                )
+                            ]
+                        ),
+
+                        NodeConfig(
+                            key = "add_impulse_noise",
+                            name = "Добавить импульсный шум",
+                            icon = icons.GRAIN,
+                            color = colors.PINK,
+                            function = add_impulse_noise,
+                            parameters = [
+                                OutParamConfig(
+                                    key="noisy_image", name="Noisy image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+                                OutParamConfig(
+                                    key="noise", name="Noise",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                SingleValueParamConfig(
+                                    key="salt_vs_pepper_ratio", name="Salt pepper ratio",
+                                    default_value = 0.05, min_value = 0, max_value = 1
+                                )
+
+                            ]
+                        ),
+
+                        NodeConfig(
+                            key = "add_mixed_noise",
+                            name = "Добавить смешанный шум",
+                            icon = icons.WAVES,
+                            color = colors.PINK,
+                            function = add_mixed_noise,
+                            parameters = [
+                                OutParamConfig(
+                                    key="noisy_image", name="Noisy image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+                                OutParamConfig(
+                                    key="random_noise", name="Random noise",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+                                OutParamConfig(
+                                    key="impulse_noise", name="Impulse noise",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                SingleValueParamConfig(
+                                    key="mean", name="Mean",
+                                    default_value = 0
+                                ),
+                                SingleValueParamConfig(
+                                    key="stddev", name="Stddev",
+                                    default_value = 10, min_value = 0  
+                                ),
+                                SingleValueParamConfig(
+                                    key="salt_vs_pepper_ratio", name="Salt pepper ratio",
+                                    default_value = 0.05, min_value = 0, max_value = 1
+                                )
+                            ]
+                        ),
+
+                        NodeConfig(
+                            key = "apply_average_filter",
+                            name = "Усредняющий арифметический фильтр",
+                            icon = icons.HELP,
+                            color = colors.PINK,
+                            function = apply_average_filter,
+                            parameters = [
+                                OutParamConfig(
+									key="anti_noisy_image", name="Anti noisy image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                SingleValueParamConfig(
+                                    key="kernel_size_x", name="Kernel size X",
+                                    default_value = 3, min_value = 1, decimal_accuracy=0
+                                ),
+                                SingleValueParamConfig(
+                                    key="kernel_size_y", name="Kernel size Y",
+                                    default_value = 3, min_value = 1, decimal_accuracy=0
+                                )
+                            ]
+                        ),
+
+                        NodeConfig(
+                            key = "apply_median_filter",
+                            name = "Медианный фильтр",
+                            icon = icons.HELP,
+                            color = colors.PINK,
+                            function = apply_median_filter,
+                            parameters = [
+                                OutParamConfig(
+                                    key="anti_noisy_image", name="Anti noisy image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                SingleValueParamConfig(
+                                    key="kernel_size", name="Kernel size",
+                                    default_value = 3, min_value = 1, decimal_accuracy=0
+                                )
+                            ]
+                        )
                         
                     ]
                 ),
