@@ -50,6 +50,7 @@ class NodeView(Stack):
         self.set_style()
 
         self.header: Container = self.create_header()
+        self.progress_bar: ProgressBar = self.create_progress_bar()
         self.parameters: Container = self.create_parameters()
         self.connect_points: List["ParameterConnectPoint"] = self.create_contact_points_list()
 
@@ -78,6 +79,7 @@ class NodeView(Stack):
                 content = Column(
                     controls = [
                         self.header,
+                        self.progress_bar,
                         self.parameters
                     ],
                     spacing = 0,
@@ -158,6 +160,30 @@ class NodeView(Stack):
         )
 
 
+    def create_progress_bar(self) -> ProgressBar:
+        """
+        Создает прогресс бар узла
+        """
+        return ProgressBar(
+            value = 0,
+            height = self.PARAM_PADDING,
+            bar_height = self.PARAM_PADDING,
+            color = self.NODE_SELECT_BORDER_COLOR,
+            bgcolor = colors.with_opacity(0, colors.GREY_800),
+        )
+    
+
+    def set_progress_bar_state(self, is_processing: bool) -> None:
+        """
+        Устанавливает состояние прогресс бара
+        """
+        if is_processing:
+            self.progress_bar.value = None
+        else:
+            self.progress_bar.value = 0
+        self.progress_bar.update()
+
+
     def toggle_parameters(self, e) -> None:
         """
         Открывает/закрывает параметры узла
@@ -222,7 +248,11 @@ class NodeView(Stack):
                 controls = self.parameters_dict.values(),
                 spacing = 0,
             ),
-            padding = padding.all(self.PARAM_PADDING),
+            padding = padding.only(
+                left=self.PARAM_PADDING,
+                right=self.PARAM_PADDING,
+                bottom=self.PARAM_PADDING
+            ),
         )
     
 

@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..workplace import Workplace
 
-from .configs import *
+from ..configs import *
 from ..node import NodeConfig
 
 from flet import *

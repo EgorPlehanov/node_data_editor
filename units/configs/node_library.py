@@ -1,7 +1,7 @@
 from .folder import Folder
-from ...node import NodeConfig
-from ...parameters import *
-from ...calculation_functions import *
+from ..node import NodeConfig
+from ..parameters import *
+from ..calculation_functions import *
 
 from typing import List
 from flet import icons, colors
@@ -589,7 +589,37 @@ class NodeLibrary:
                     icon = icons.LABEL,
                     color = colors.PURPLE,
                     obj_list = [
-                        
+                        NodeConfig(
+                            key = "detect_artifacts",
+                            name = "Обнаружить артефакты рентген-изображения",
+                            icon = icons.QUESTION_MARK,
+                            color = colors.PURPLE,
+                            function = detect_artifacts,
+                            parameters = [
+                                OutParamConfig(
+                                    key="original_spectrum", name="Original spectrum",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+                                OutParamConfig(
+                                    key="derivative_spectrum", name="Derivative spectrum",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+                                OutParamConfig(
+                                    key="autocorrelation", name="Autocorrelation",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+                                OutParamConfig(
+                                    key="crosscorrelation", name="Crosscorrelation",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                BoolValueParamConfig(
+                                    key="is_grayscale", name="Is grayscale",
+                                    default_value = True
+                                ),
+                            ]
+                        )
                     ]
                 ),
 

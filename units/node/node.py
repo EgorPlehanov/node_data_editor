@@ -49,7 +49,7 @@ class Node(GestureDetector):
         self.parameters_dict = self.node_view.parameters_dict
         self.height = self.content.get_height()
 
-        self.calculate()
+        self.calculate(is_init=True)
 
 
     def __str__(self) -> str:
@@ -77,6 +77,7 @@ class Node(GestureDetector):
 
         self.is_open = True
         self.is_selected = False
+        self.is_processing = False
         self.is_display_result = self.config.is_display_result
 
         self.name = self.config.name
@@ -151,6 +152,15 @@ class Node(GestureDetector):
         self.update()
 
 
+    def set_processing_state(self, is_processing: bool, is_init: bool = False) -> None:
+        """
+        Устанавливает состояние обработки узла
+        """
+        self.is_processing = is_processing
+        if not is_init:
+            self.node_view.set_progress_bar_state(is_processing)
+
+
     def toggle_selection(self, is_update = True) -> None:
         """
         Переключает выделение узла
@@ -161,10 +171,16 @@ class Node(GestureDetector):
             self.update()
 
 
-    def calculate(self, is_recalculate_dependent_nodes = True) -> None:
+    def calculate(
+        self,
+        is_recalculate_dependent_nodes: bool = True,
+        is_init: bool = False
+    ) -> None:
         '''
         Вычисляет значение функции
         '''
+        self.set_processing_state(is_processing = True, is_init = is_init)
+
         try:
             valid_parameters = self._get_valid_parameters()
             self.result: Dict = self.function(**valid_parameters)
@@ -173,12 +189,14 @@ class Node(GestureDetector):
         self.set_result_to_out_parameters()
         print(self.id, self.name, self.result) # ОТЛАДКА TEST
 
+        if self.is_display_result:
+            self.display_result()
+
+        self.set_processing_state(is_processing = False, is_init = is_init)
+
         if is_recalculate_dependent_nodes:
             self.node_area.recalculate_dependent_nodes(self)
 
-        if self.is_display_result:
-            self.display_result()
-        
 
     def set_result_to_out_parameters(self) -> None:
         '''
