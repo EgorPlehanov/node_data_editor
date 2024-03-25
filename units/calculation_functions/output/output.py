@@ -5,14 +5,14 @@ from datetime import datetime
 
 
 
-def display_result(result: Any, label: str):
+def display_result(result: Any, label: Any) -> dict:
     """
     Функция вывода значения
     """
     cur_time = datetime.now().strftime("%H:%M:%S")
     return {"result": {
         "result": result,
-        "label": label,
+        "label": str(label),
         "current_time": cur_time
     }}
     
