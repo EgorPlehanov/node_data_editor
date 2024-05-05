@@ -23,7 +23,7 @@ class SingleValueParamConfig(ParameterConfigInterface):
     """
     
     default_value: int | float = 0
-    velue_step: int | float = 1
+    value_step: int | float = 1
     min_value: int | float = None
     max_value: int | float = None
     decimal_accuracy: int = None
@@ -77,7 +77,7 @@ class SingleValueParam(Container, ParameterInterface):
         """
         Устанавливает стиль параметра
         """
-        self.value_step = self._config.velue_step
+        self.value_step = self._config.value_step
         self.min_value = self._config.min_value
         self.max_value = self._config.max_value
         self.decimal_accuracy = self._config.decimal_accuracy

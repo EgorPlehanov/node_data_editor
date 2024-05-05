@@ -46,7 +46,7 @@ def read_file(file: File | str = None):
     '''
     read_data = {
         'jpg': read_jpg_image,
-        'jpg': read_jpg_image, 
+        'jpg': read_jpg_image,
         "jpeg": read_jpg_image,
         "png": read_jpg_image,
         "bmp": read_jpg_image,

@@ -5,3 +5,4 @@ from .output import *
 from .input import *
 from .edit import *
 from .statistics import *
+from .lab import *
