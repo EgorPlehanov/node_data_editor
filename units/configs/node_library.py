@@ -863,7 +863,25 @@ class NodeLibrary:
                     icon = icons.LABEL,
                     color = colors.AMBER,
                     obj_list = [
-                        
+                        NodeConfig(
+                            key = "fourier_resize_image",
+                            name = "Увеличить изображение furier",
+                            icon = icons.HELP,
+                            color = colors.AMBER,
+                            function = fourier_resize_image,
+                            parameters = [
+                                OutParamConfig(
+                                    key="resized_image", name="resized image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                SingleValueParamConfig(
+                                    key="scale_factor", name="Scale factor",
+                                    default_value = 1.5, min_value = 1
+                                )
+                            ]
+                        )
                     ]
                 ),
 
@@ -912,6 +930,43 @@ class NodeLibrary:
                             ]
                         ),
 
+                        NodeConfig(
+                            key = "filter_image",
+                            name = "Фильтр изображения",
+                            icon = icons.HELP,
+                            color = colors.LIME,
+                            function = filter_image,
+                            parameters = [
+                                OutParamConfig(
+                                    key="filtered_image", name="Filtered img",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                DropdownValueParamConfig(
+                                    key="kernel_type", name="Тип ядра",
+                                    options = [
+                                        DropdownOptionConfig(key="lowpass", text="Простой усредняющий фильтр"),
+                                        DropdownOptionConfig(key="highpass", text="Обнаружение краев"),
+                                        DropdownOptionConfig(key="gaussian", text="Гауссовское размытие"),
+                                        DropdownOptionConfig(key="sharpen", text="Увеличение резкости"),
+                                        DropdownOptionConfig(key="edge_detection", text="Обнаружение краев"),
+                                        DropdownOptionConfig(key="emboss", text="Рельефный фильтр"),
+                                        DropdownOptionConfig(key="sobel_horizontal", text="Горизонтальный фильтр Собеля"),
+                                        DropdownOptionConfig(key="sobel_vertical", text="Вертикальный фильтр Собеля"),
+                                        DropdownOptionConfig(key="box_blur", text="Размытие Box Blur"),
+                                        DropdownOptionConfig(key="laplacian", text="Оператор Лапласиана"),
+                                        DropdownOptionConfig(key="laplacian_diagonal", text="Диагональный Лапласиан"),
+                                        DropdownOptionConfig(key="directional_north", text="Направленный фильтр (север)"),
+                                        DropdownOptionConfig(key="directional_east", text="Направленный фильтр (восток)"),
+                                        DropdownOptionConfig(key="scharr_horizontal", text="Горизонтальный фильтр Шарра"),
+                                        DropdownOptionConfig(key="scharr_vertical", text="Вертикальный фильтр Шарра")
+                                    ]
+                                )
+
+                            ]
+
+                        )
                     ]
                 ),
 

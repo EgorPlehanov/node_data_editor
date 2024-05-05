@@ -10,7 +10,7 @@ def read_jpg_image(file_path):
     """
     Чтение jpg изображения
     """
-    return cv2.imread(file_path)
+    return cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
 
 
 

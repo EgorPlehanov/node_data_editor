@@ -181,11 +181,11 @@ class Node(GestureDetector):
         '''
         self.set_processing_state(is_processing = True, is_init = is_init)
 
-        try:
-            valid_parameters = self._get_valid_parameters()
-            self.result: Dict = self.function(**valid_parameters)
-        except Exception as e:
-            self.result = {"error": str(e)}
+        # try:
+        valid_parameters = self._get_valid_parameters()
+        self.result: Dict = self.function(**valid_parameters)
+        # except Exception as e:
+        #     self.result = {"error": str(e)}
         self.set_result_to_out_parameters()
         print(self.id, self.name, self.result) # ОТЛАДКА TEST
 
