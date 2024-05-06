@@ -619,6 +619,117 @@ class NodeLibrary:
                                     default_value = True
                                 ),
                             ]
+                        ),
+
+                        NodeConfig(
+                            key = "lab6",
+                            name = "Определение Артефактов",
+                            icon = icons.QUESTION_MARK,
+                            color = colors.PURPLE,
+                            function = lab6,
+                            parameters = [
+                                OutParamConfig(
+                                    key="rotate_image", name="rotate_image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+                                OutParamConfig(
+                                    key="rotate_image_line_spectr", name="rotate_image_line_spectr",
+                                    connect_point_color=colors.BLUE
+                                ),
+                                OutParamConfig(
+                                    key="compute_derivative_plt", name="compute_derivative_plt",
+                                    connect_point_color=colors.BLUE
+                                ),
+                                OutParamConfig(
+                                    key="autocorrelation_plt", name="autocorrelation_plt",
+                                    connect_point_color=colors.BLUE
+                                ),
+                                OutParamConfig(
+                                    key="acf_spectr_plt", name="acf_spectr_plt",
+                                    connect_point_color=colors.BLUE
+                                ),
+                                OutParamConfig(
+                                    key="max_amplitude", name="max_amplitude",
+                                    connect_point_color=colors.GREEN
+                                ),
+                                OutParamConfig(
+                                    key="max_frequency_acf", name="max_frequency_acf",
+                                    connect_point_color=colors.GREEN
+                                ),
+                                OutParamConfig(
+                                    key="cross_correlation_fig", name="cross_correlation_fig",
+                                    connect_point_color=colors.BLUE
+                                ),
+                                OutParamConfig(
+                                    key="ccf_spectr_fig", name="ccf_spectr_fig",
+                                    connect_point_color=colors.BLUE
+                                ),
+                                OutParamConfig(
+                                    key="max_amplitudes_ccf", name="max_amplitudes_ccf",
+                                    connect_point_color=colors.GREEN
+                                ),
+                                OutParamConfig(
+                                    key="max_frequency_ccf", name="max_frequency_ccf",
+                                    connect_point_color=colors.GREEN
+                                ),
+                                OutParamConfig(
+                                    key="max_frequency", name="max_frequency",
+                                    connect_point_color=colors.GREEN
+                                ),
+                                OutParamConfig(
+                                    key="normalized_filtered_image", name="normalized_filtered_image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+                                OutParamConfig(
+                                    key="filtered_spectr_fig", name="filtered_spectr_fig",
+                                    connect_point_color=colors.GREEN
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                DropdownValueParamConfig(
+                                    key="rotation_angle", name="rotation_angle",
+                                    default_value = "90",
+                                    options = [
+                                        DropdownOptionConfig(key="0", text="0"),
+                                        DropdownOptionConfig(key="90", text="90"),
+                                        DropdownOptionConfig(key="180", text="180"),
+                                        DropdownOptionConfig(key="270", text="270"),
+                                    ]
+                                ),
+                                SingleValueParamConfig(
+                                    key="line_number",  name="line_number",
+                                    default_value = 0, min_value = 0, decimal_accuracy=0
+                                ),
+                                SingleValueParamConfig(
+                                    key="ds", name="Верт. смещение",
+                                    default_value = 0, min_value = 0, decimal_accuracy=0
+                                ),
+                                DropdownValueParamConfig(
+                                    key="convolution_type", name="convolution_type",
+                                    options = [
+                                        DropdownOptionConfig(key="same", text="same"),
+                                        DropdownOptionConfig(key="valid", text="valid"),
+                                        DropdownOptionConfig(key="full", text="full"),
+                                    ]
+                                ),
+                                SingleValueParamConfig(
+                                    key="dt", name="dt",
+                                    default_value = 1, min_value = 0
+                                ),
+                                SingleValueParamConfig(
+                                    key="m", name="m",
+                                    default_value = 48, min_value = 16, max_value = 48,
+                                    decimal_accuracy=0
+                                ),
+                                SingleValueParamConfig(
+                                    key="fc1", name="fc1",
+                                    default_value = 0, min_value = 0
+                                ),
+                                SingleValueParamConfig(
+                                    key="fc2", name="fc2",
+                                    default_value = 0, min_value = 0
+                                )
+                            ]
                         )
                     ]
                 ),

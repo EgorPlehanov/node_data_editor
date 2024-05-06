@@ -1,3 +1,4 @@
+from .lab6 import *
 from .lab8 import *
 from .lab9 import *
 from .lab10 import *
