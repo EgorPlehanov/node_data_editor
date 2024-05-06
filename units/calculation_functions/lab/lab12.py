@@ -70,3 +70,28 @@ def apply_gradient_and_laplacian(image, method='gradient'):
     return {
         "thresholding_image": NodeResult(thresholding_image, ResultType.IMAGE_CV2),
     }
+
+
+
+def sharpen_image_with_laplacian(image):
+    if image is None:
+        return {"sharpened_image": None}
+    if isinstance(image, File):
+        image = read_file(image.path)
+
+    # Применение оператора Лапласиана
+    sharpened_image = cv2.Laplacian(image, cv2.CV_64F)
+
+    # Добавление результата к исходному изображению
+    sharpened_image = cv2.addWeighted(
+        image.astype(np.float64), 25.5, sharpened_image, -2.5, 0
+    )
+
+    # Нормализация изображения
+    # sharpened_image = np.uint8(np.clip(sharpened_image, 0, 255))
+    min_val, max_val = np.min(sharpened_image), np.max(sharpened_image)
+    scaled_image = ((sharpened_image - min_val) / (max_val - min_val)) * 255
+
+    return {
+        "sharpened_image": NodeResult(scaled_image.astype(np.uint8), ResultType.IMAGE_CV2),
+    }

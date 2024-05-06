@@ -878,7 +878,42 @@ class NodeLibrary:
                                 FilePickerParamConfig(key="image", name="Фото"),
                                 SingleValueParamConfig(
                                     key="scale_factor", name="Scale factor",
-                                    default_value = 1.5, min_value = 1
+                                    default_value = 1.5, min_value = 0.01
+                                )
+                            ]
+                        ),
+
+                        NodeConfig(
+                            key = "fourier_resize_image2",
+                            name = "Уменьшить изображение furier 2",
+                            icon = icons.HELP,
+                            color = colors.AMBER,
+                            function = fourier_resize_image2,
+                            parameters = [
+                                OutParamConfig(
+                                    key="resized_image", name="resized image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+                                OutParamConfig(
+                                    key="resized_image_spectrum", name="resized image spectrum",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                SingleValueParamConfig(
+                                    key="scale_factor_height", name="Scale height",
+                                    default_value = 1.5, min_value = 0.01
+                                ),
+                                SingleValueParamConfig(
+                                    key="scale_factor_width", name="Scale width",
+                                    default_value = 1.5, min_value = 0.01
+                                ),
+                                DropdownValueParamConfig(
+                                    key="mode", name="Mode",
+                                    options=[
+                                        DropdownOptionConfig(key="decrease", text="Уменьшить"),
+                                        DropdownOptionConfig(key="increase", text="Увеличить"),
+                                    ],
                                 )
                             ]
                         )
@@ -976,6 +1011,52 @@ class NodeLibrary:
                     color = colors.CYAN,
                     obj_list = [
                         NodeConfig(
+                            key = "apply_gradient_and_laplacian",
+                            name = "Аппроксимации дифференциальных операторов градиента и лапласиана",
+                            icon = icons.HELP,
+                            color = colors.BLUE,
+                            function = apply_gradient_and_laplacian,
+                            parameters = [
+                                OutParamConfig(
+                                    key="thresholding_image", name="Thresholding image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                                DropdownValueParamConfig(
+                                    key="method", name="Метод",
+                                    options = [
+                                        DropdownOptionConfig(key="gradient", text="Градиент"),
+                                        DropdownOptionConfig(key="laplacian", text="Лапласиан"),
+                                    ]
+                                )
+                            ]
+                        ),
+
+                        NodeConfig(
+                            key = "sharpen_image_with_laplacian",
+                            name = "Увеличение резкости изображения с использованием лапласиана",
+                            icon=icons.HELP,
+                            color=colors.BLUE,
+                            function = sharpen_image_with_laplacian,
+                            parameters = [
+                                OutParamConfig(
+                                    key="sharpened_image", name="Sharpened image",
+                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
+                                ),
+
+                                FilePickerParamConfig(key="image", name="Фото"),
+                            ]
+                        )
+                    ]
+                ),
+
+                Folder(
+                    name = "Лабораторная 13",
+                    icon = icons.LABEL,
+                    color = colors.BLUE,
+                    obj_list = [
+                        NodeConfig(
                             key = "contours_from_morphology",
                             name = "Контуры из морфологии",
                             icon = icons.HELP,
@@ -999,36 +1080,6 @@ class NodeLibrary:
                                     key="kernel_size", name="Kernel size",
                                     default_value = 3, min_value = 1, decimal_accuracy=0
                                 ),
-                            ]
-                        )
-                    ]
-                ),
-
-                Folder(
-                    name = "Лабораторная 13",
-                    icon = icons.LABEL,
-                    color = colors.BLUE,
-                    obj_list = [
-                        NodeConfig(
-                            key = "apply_gradient_and_laplacian",
-                            name = "Аппроксимации дифференциальных операторов градиента и лапласиана",
-                            icon = icons.HELP,
-                            color = colors.BLUE,
-                            function = apply_gradient_and_laplacian,
-                            parameters = [
-                                OutParamConfig(
-                                    key="thresholding_image", name="Thresholding image",
-                                    connect_point_color=colors.DEEP_PURPLE_ACCENT_700
-                                ),
-
-                                FilePickerParamConfig(key="image", name="Фото"),
-                                DropdownValueParamConfig(
-                                    key="method", name="Метод",
-                                    options = [
-                                        DropdownOptionConfig(key="gradient", text="Градиент"),
-                                        DropdownOptionConfig(key="laplacian", text="Лапласиан"),
-                                    ]
-                                )
                             ]
                         )
                     ]
